@@ -25,6 +25,12 @@
 const int MAX_NUMBER_SONGS = 2;
 const int MAX_STRING_SIZE = 7;
 
+/* Constants for SongDetail; the length includes the null character */
+const int ID_LENGTH = 4;
+const int NAME_LENGTH = 26;
+const int ARTIST_LENGTH = 21;
+const int RATING_LENGTH = 2;
+
 //const int SONG_SIZE = 2000;
 //const int SONG_SIZE = 65534/2;	//around 0.5 second long
 const int SONG_SIZE = 65534;	//around 1 second long
@@ -41,23 +47,33 @@ int streamB_size;
 int stream_flag;
 int state;
 
+
+typedef struct {
+	char* id;
+	char* name;
+	char* artist;
+	char* rating;
+} songDetail;
+
+
+
 /* Device references */
 alt_up_sd_card_dev *sd_card_reference;
 alt_up_av_config_dev * av_config;
 alt_up_audio_dev * audio;
 alt_up_character_lcd_dev * char_lcd_dev;
 
-/* File Handler */
-short int file_handle;
-
 /* Initialization */
 void initialization();
 
-/*
- * Opens a file and stores the file_handle in the memory pointed by file_handle_ptr
- * return 0 if successful, otherwise -1
- */
-char openFileInSD( char* fileName );
+/* SD Functions */
+char openFileInSD( char* fileName, short int* file_handle );
+char closeFileInSD( short int file_handle );
+songDetail** getListOfSongDetails();
+char initializeSongDetail( songDetail* song );
+songDetail* readDetailForOneSong( short int file_handle );
+char readWordFromSD( char* name, const int LENGTH, short int file_handle );
+char readACharFromSD( short int file_handle );
 
 /*
  * play a song
@@ -65,13 +81,13 @@ char openFileInSD( char* fileName );
  * return 1 if the song stopped before ending
  * otherwise 0
  */
-int playSong(char* songName);
+int playSong( short int file_handle );
 
 /*
  * stop playing the song
  * close the file
  */
-void stopSong();
+void stopSong( short int file_handle );
 
 /*
  * Audio interrupt handler
@@ -88,7 +104,7 @@ void audio_isr (void * context, unsigned int irq_id);
  * return -1 if the file_handler reaches eof
  * otherwise return 0
  */
-int streamSong();
+int streamSong( short int file_handle );
 
 /*
  * read keys and update the current state
@@ -101,6 +117,8 @@ int main()
 	initialization();
 	char key;
 
+	short int file_handle;
+	int i;
 	int currSong = 0;
 	int keepPlaying = 0;
 	/*
@@ -148,12 +166,25 @@ int main()
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
 			alt_up_character_lcd_string(char_lcd_dev, songList[currSong]);
 
-			if( playSong(songList[currSong]) == 0)
+			if( openFileInSD( songList[currSong], &file_handle ) == 0)
+			{
+				// skip the header
+				for(i = 0; i < WAV_HEADER_SIZE; i++)
+					alt_up_sd_card_read( file_handle );
+				printf("file opened\n");
+			}
+			else
+			{
+				printf("failed to open wav\n");
+				exit(1);
+			}
+
+			if( playSong( file_handle ) == 0)
 				state = NEXT;
 		}
 		else if(state == NEXT)
 		{
-			stopSong();
+			stopSong( file_handle );
 			currSong = (currSong + 1) % MAX_NUMBER_SONGS;
 			if(!keepPlaying)
 				state = STOP;
@@ -171,32 +202,19 @@ int main()
  * return 1 if the song stopped before ending
  * otherwise 0
  */
-int playSong(char* songName)
+int playSong( short int file_handle )
 {
 	alt_irq_disable(AUDIO_0_IRQ);
 
-	int i = 0;
+	int i;
 	int prev_stream_flag;
-
-	if( openFileInSD(songName) == 0)
-	{
-		// skip the header
-		for(i = 0; i < WAV_HEADER_SIZE; i++)
-			alt_up_sd_card_read( file_handle );
-		printf("file opened\n");
-	}
-	else
-	{
-		printf("failed to open wav\n");
-		exit(1);
-	}
 
 	stream_flag = 1;
 	streamA_size = 0;
 	streamB_size = 0;
 	song_index = 0;
 
-	streamSong();	//save to stream A
+	streamSong( file_handle );	//save to stream A
 	stream_flag = 0;	//play stream A
 
 	alt_irq_enable(AUDIO_0_IRQ);
@@ -206,21 +224,21 @@ int playSong(char* songName)
 	{
 		if(state == PLAYING)
 		{
-			i = streamSong();
+			i = streamSong( file_handle );
 			//printf("done streaming\n");
 			while(stream_flag == prev_stream_flag);	//wait to switch stream
 			prev_stream_flag = stream_flag;
 		}
 		else if(state == STOP)
 		{
-			stopSong();
+			stopSong( file_handle );
 			return 1;
 		}
 		else if(state == NEXT)
 			break;
 	}
 
-	stopSong();
+	stopSong( file_handle );
 	return 0;
 }
 
@@ -275,7 +293,7 @@ void audio_isr (void * context, unsigned int irq_id)
  * return -1 if the file_handler reaches eof
  * otherwise return 0
  */
-int streamSong()
+int streamSong( short int file_handle )
 {
 	unsigned int* stream;
 	int buf;
@@ -322,13 +340,13 @@ int streamSong()
 	return 0;
 }
 
-void stopSong()
+void stopSong( short int file_handle )
 {
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 	alt_up_character_lcd_string(char_lcd_dev, "STOP   ");
 	alt_irq_disable(AUDIO_0_IRQ);
 	alt_up_audio_reset_audio_core(audio);
-	alt_up_sd_card_fclose(file_handle);
+	closeFileInSD(file_handle);
 }
 
 void initialization()
@@ -369,27 +387,183 @@ void initialization()
 /* Opens a file and stores the file_handle in the memory pointed by file_handle_ptr
  * return 0 if successful, otherwise -1
  */
-char openFileInSD( char* fileName )
+char openFileInSD( char* fileName, short int* file_handle_ptr )
 {
+	short int file_handle;
+
 	if ( alt_up_sd_card_is_Present() )
 	{
+		//printf("SD Card connected.\n");	// debugging purpose
+
 		if ( alt_up_sd_card_is_FAT16() )
 		{
+			//printf("FAT16 file system detected.\n"); // debugging purpose
+
 			file_handle = alt_up_sd_card_fopen( fileName, false );
 			if ( file_handle == -1 )
 				printf( "Error: File could not be opened.\n" );
 			if ( file_handle == -2 )
 				printf( "Error: File is already open.\n" );
+
 			if ( file_handle != -1 && file_handle != -2 )
+			{
+				//printf( "SD Card successfully opened.\n" ); // debugging purpose
+				*file_handle_ptr = file_handle;
 				return 0;
+			}
 		}
 		else
+		{
 			printf("Error: Unknown file system.\n");
+		}
 	}
 	else
+	{
 		printf( "Error: SD Card not connected.\n" );
+	}
 
 	return -1;
+}
+
+/* Closes the file
+ * Returns 0 if successful, otherwise -1
+ */
+char closeFileInSD( short int file_handle )
+{
+	if ( alt_up_sd_card_fclose( file_handle ) )
+	{
+		printf( "File successfully closed.\n" ); // debugging purpose
+		return 0;
+	}
+	else
+	{
+		printf( "Error: File not closed.\n" );
+		return -1;
+	}
+}
+
+songDetail** getListOfSongDetails()
+{
+	songDetail** songList;
+	short int file_handle;
+	short int numSongs;
+	int i;
+
+	openFileInSD( "SONGLIST.TXT", &file_handle );
+
+	numSongs = readACharFromSD( file_handle );
+	if ( numSongs == -1 )
+		return NULL;
+
+	songList = malloc( numSongs * sizeof(songDetail) );
+
+	for ( i = 0; i < numSongs; i++ )
+	{
+		songList[i] = readDetailForOneSong( file_handle );
+		if ( !songList[i] )
+		{
+			closeFileInSD( file_handle );
+			return NULL;
+		}
+	}
+
+	closeFileInSD( file_handle );
+	return songList;
+}
+
+char initializeSongDetail( songDetail* song )
+{
+	song->id = (char)malloc( ID_LENGTH );
+	song->name = (char)malloc( NAME_LENGTH );
+	song->artist = (char)malloc( ARTIST_LENGTH );
+	song->rating = (char)malloc( RATING_LENGTH );
+
+	if ( !song->id || !song->name || !song->artist || !song->rating )
+	{
+		printf( "Error: no more memory to malloc for song detail elements.\n" );
+		return -1;
+	}
+
+	return 0;
+}
+
+songDetail* readDetailForOneSong( short int file_handle )
+{
+	songDetail* song = (songDetail*)malloc(sizeof(songDetail));
+	char t1, t2, t3, t4;
+
+	if ( !song )
+	{
+		printf( "Error: No more memory to malloc for song detail.\n" );
+		return NULL;
+	}
+
+	if ( initializeSongDetail( song ) == -1 )
+		return NULL;
+
+	t1 = readWordFromSD( song->id, ID_LENGTH, file_handle );
+	t2 = readWordFromSD( song->name, NAME_LENGTH, file_handle );
+	t3 = readWordFromSD( song->artist, ARTIST_LENGTH, file_handle );
+	t4 = readWordFromSD( song->rating, RATING_LENGTH, file_handle );
+
+	if ( t1 == -1 || t2 == -1 || t3 == -1 || t4 == -1 )
+		return NULL;
+
+	return song;
+}
+
+/* Pre: name has to have at least LENGTH bytes of memory allocated
+ * Post: the memory pointed by name has the string
+ * Returns 0 if sucessful, otherwise -1
+ */
+char readWordFromSD( char* name, const int LENGTH, short int file_handle )
+{
+	int i = 0;
+	char ch;
+
+	ch = readACharFromSD( file_handle );
+
+	while ( ch != -1 && ch != '.' )
+	{
+		name[i++] = ch;
+
+		if ( i > LENGTH )
+		{
+			printf( "Error: Word is longer than the maximum length allowed.\n" );
+			return -1;
+		}
+
+		ch = readACharFromSD( file_handle );
+	}
+
+	if ( ch == -1 )
+	{
+		printf( "Error: readDataFromSD Failed.\n" );
+		return -1;
+	}
+
+	name[i] = '\0';
+
+	return 0;
+}
+
+/* Reads a char in the file
+ * Returns a signed char if data successful, otherwise -1
+ */
+char readACharFromSD( short int file_handle )
+{
+	char byte;
+	short int temp;
+
+	temp = alt_up_sd_card_read( file_handle );
+	if ( temp < 0 )
+	{
+		printf( "Error: alt_up_sd_card_read Failed.\n" );
+		return -1;
+	}
+	byte = (char)temp;
+
+	return byte;
 }
 
 void updateState()
@@ -425,3 +599,4 @@ void updateState()
 
 
 }
+
