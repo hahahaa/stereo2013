@@ -24,12 +24,14 @@
 
 const int MAX_NUMBER_SONGS = 2;
 const int MAX_STRING_SIZE = 7;
+const int MAX_NUM_SONGS = 100;
+const int MAX_DIGIT_OF_MAX_NUM_SONG = 4; // has to include memory for null character
 
 /* Constants for SongDetail; the length includes the null character */
-const int ID_LENGTH = 4;
+const int ID_LENGTH = 5;	// id length includes the carriage return character in addition
 const int NAME_LENGTH = 26;
 const int ARTIST_LENGTH = 21;
-const int RATING_LENGTH = 2;
+const int RATING_LENGTH = 3;
 
 //const int SONG_SIZE = 2000;
 //const int SONG_SIZE = 65534/2;	//around 0.5 second long
@@ -72,7 +74,7 @@ char closeFileInSD( short int file_handle );
 songDetail** getListOfSongDetails();
 char initializeSongDetail( songDetail* song );
 songDetail* readDetailForOneSong( short int file_handle );
-char readWordFromSD( char* name, const int LENGTH, short int file_handle );
+char readWordFromSD( char* name, const int length, short int file_handle );
 char readACharFromSD( short int file_handle );
 
 /*
@@ -116,6 +118,15 @@ int main()
 {
 	initialization();
 	char key;
+
+
+
+
+	getListOfSongDetails();
+	return 0;
+
+
+
 
 	short int file_handle;
 	int i;
@@ -393,11 +404,11 @@ char openFileInSD( char* fileName, short int* file_handle_ptr )
 
 	if ( alt_up_sd_card_is_Present() )
 	{
-		//printf("SD Card connected.\n");	// debugging purpose
+		printf("SD Card connected.\n");	// debugging purpose
 
 		if ( alt_up_sd_card_is_FAT16() )
 		{
-			//printf("FAT16 file system detected.\n"); // debugging purpose
+			printf("FAT16 file system detected.\n"); // debugging purpose
 
 			file_handle = alt_up_sd_card_fopen( fileName, false );
 			if ( file_handle == -1 )
@@ -407,7 +418,7 @@ char openFileInSD( char* fileName, short int* file_handle_ptr )
 
 			if ( file_handle != -1 && file_handle != -2 )
 			{
-				//printf( "SD Card successfully opened.\n" ); // debugging purpose
+				printf( "SD Card successfully opened.\n" ); // debugging purpose
 				*file_handle_ptr = file_handle;
 				return 0;
 			}
@@ -446,14 +457,23 @@ songDetail** getListOfSongDetails()
 {
 	songDetail** songList;
 	short int file_handle;
-	short int numSongs;
 	int i;
+	char* numSongsStr = (char*)malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
+	int numSongs;
+
+	if ( !numSongsStr )
+	{
+		printf( "Error: no memory to allocate memory for numSongs.\n" );
+		return NULL;
+	}
+
 
 	openFileInSD( "SONGLIST.TXT", &file_handle );
 
-	numSongs = readACharFromSD( file_handle );
-	if ( numSongs == -1 )
+	if ( readWordFromSD( numSongsStr, MAX_NUM_SONGS, file_handle ) == -1 )
 		return NULL;
+
+	numSongs = atoi( numSongsStr );
 
 	songList = malloc( numSongs * sizeof(songDetail) );
 
@@ -465,6 +485,9 @@ songDetail** getListOfSongDetails()
 			closeFileInSD( file_handle );
 			return NULL;
 		}
+
+		// Debugging purpose
+		printf( "Song: %s %s %s %s\n", songList[i]->id, songList[i]->name, songList[i]->artist, songList[i]->rating );
 	}
 
 	closeFileInSD( file_handle );
@@ -473,10 +496,10 @@ songDetail** getListOfSongDetails()
 
 char initializeSongDetail( songDetail* song )
 {
-	song->id = (char)malloc( ID_LENGTH );
-	song->name = (char)malloc( NAME_LENGTH );
-	song->artist = (char)malloc( ARTIST_LENGTH );
-	song->rating = (char)malloc( RATING_LENGTH );
+	song->id = (char*)malloc( ID_LENGTH );
+	song->name = (char*)malloc( NAME_LENGTH );
+	song->artist = (char*)malloc( ARTIST_LENGTH );
+	song->rating = (char*)malloc( RATING_LENGTH );
 
 	if ( !song->id || !song->name || !song->artist || !song->rating )
 	{
@@ -509,6 +532,9 @@ songDetail* readDetailForOneSong( short int file_handle )
 	if ( t1 == -1 || t2 == -1 || t3 == -1 || t4 == -1 )
 		return NULL;
 
+	/* Removes the carraige return character */
+	song->id = &song->id[1];
+
 	return song;
 }
 
@@ -516,7 +542,7 @@ songDetail* readDetailForOneSong( short int file_handle )
  * Post: the memory pointed by name has the string
  * Returns 0 if sucessful, otherwise -1
  */
-char readWordFromSD( char* name, const int LENGTH, short int file_handle )
+char readWordFromSD( char* name, const int length, short int file_handle )
 {
 	int i = 0;
 	char ch;
@@ -526,10 +552,11 @@ char readWordFromSD( char* name, const int LENGTH, short int file_handle )
 	while ( ch != -1 && ch != '.' )
 	{
 		name[i++] = ch;
+		//printf( "%c", ch );	// debugging purpose
 
-		if ( i > LENGTH )
+		if ( i > length )
 		{
-			printf( "Error: Word is longer than the maximum length allowed.\n" );
+			printf( "Error: Word is longer than the maximum length(%d) allowed.\n", length );
 			return -1;
 		}
 
@@ -543,6 +570,7 @@ char readWordFromSD( char* name, const int LENGTH, short int file_handle )
 	}
 
 	name[i] = '\0';
+	//printf( "." ); // debugging purpose
 
 	return 0;
 }
