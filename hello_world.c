@@ -1,9 +1,9 @@
-#include "stdio.h"
-#include "stdlib.h"
-#include "unistd.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <system.h>
+#include <string.h>
 #include "io.h"
-#include "system.h"
-#include "string.h"
 #include "inttypes.h"
 #include "altera_up_avalon_character_lcd.h"
 #include "altera_up_avalon_parallel_port.h"
@@ -12,6 +12,7 @@
 #include "altera_up_avalon_audio.h"
 #include "sys/alt_irq.h"
 
+/* Define I/O ports */
 #define switches (int) 0x00004420
 #define leds (char *) 0x00004430
 #define keys (int) 0x00004440
@@ -22,10 +23,12 @@
 #define PAUSED 2
 #define NEXT 3
 
+/* Constants for high level song stuff */
 const int MAX_NUMBER_SONGS = 2;
 const int MAX_STRING_SIZE = 7;
 const int MAX_NUM_SONGS = 100;
 const int MAX_DIGIT_OF_MAX_NUM_SONG = 4; // has to include memory for null character
+const int EXTENSION_LENGTH = 4;
 
 /* Constants for SongDetail; the length includes the null character */
 const int ID_LENGTH = 5;	// id length includes the carriage return character in addition
@@ -49,7 +52,6 @@ int streamB_size;
 int stream_flag;
 int state;
 
-
 typedef struct {
 	char* id;
 	char* name;
@@ -57,13 +59,14 @@ typedef struct {
 	char* rating;
 } songDetail;
 
-
-
 /* Device references */
 alt_up_sd_card_dev *sd_card_reference;
 alt_up_av_config_dev * av_config;
 alt_up_audio_dev * audio;
 alt_up_character_lcd_dev * char_lcd_dev;
+
+
+/* Function prototypes */
 
 /* Initialization */
 void initialization();
@@ -71,63 +74,28 @@ void initialization();
 /* SD Functions */
 char openFileInSD( char* fileName, short int* file_handle );
 char closeFileInSD( short int file_handle );
+char readACharFromSD( short int file_handle );
+
+/* Read song list functions */
 songDetail** getListOfSongDetails();
 char initializeSongDetail( songDetail* song );
 songDetail* readDetailForOneSong( short int file_handle );
 char readWordFromSD( char* name, const int length, short int file_handle );
-char readACharFromSD( short int file_handle );
 
-/*
- * play a song
- * stops when KEY3 is pressed
- * return 1 if the song stopped before ending
- * otherwise 0
- */
+/* Song Functions */
 int playSong( short int file_handle );
-
-/*
- * stop playing the song
- * close the file
- */
 void stopSong( short int file_handle );
-
-/*
- * Audio interrupt handler
- * which is used to play a song
- * play stream A when stream_flag == 0
- * otherwise play stream B
- */
 void audio_isr (void * context, unsigned int irq_id);
-
-/*
- * precondition: file_handle, streamA and streamB are not null
- * save the song temporary to stream A when stream_flag == 1
- * otherwise save to stream B
- * return -1 if the file_handler reaches eof
- * otherwise return 0
- */
 int streamSong( short int file_handle );
 
-/*
- * read keys and update the current state
- * used while playing
- */
+/* Update */
 void updateState();
+
 
 int main()
 {
 	initialization();
 	char key;
-
-
-
-
-	getListOfSongDetails();
-	return 0;
-
-
-
-
 	short int file_handle;
 	int i;
 	int currSong = 0;
@@ -140,14 +108,11 @@ int main()
 	 */
 	state = STOP;
 
-	char songList [MAX_NUMBER_SONGS][MAX_STRING_SIZE];
-
-	strcpy(songList[0], "01.wav");
-	strcpy(songList[1], "02.wav");
+	songDetail** songDetailList = getListOfSongDetails();
 
 	int cc;
 	for(cc = 0; cc < MAX_NUMBER_SONGS; cc++)
-		printf("%s\n", songList[cc]);
+		printf("%s\n", songDetailList[cc]->id );
 
 	while(1)
 	{
@@ -167,7 +132,7 @@ int main()
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "STOP   ");
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
-			alt_up_character_lcd_string(char_lcd_dev, songList[currSong]);
+			alt_up_character_lcd_string(char_lcd_dev, songDetailList[currSong]->name);
 		}
 		else if(state == PLAYING)
 		{
@@ -175,9 +140,12 @@ int main()
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
-			alt_up_character_lcd_string(char_lcd_dev, songList[currSong]);
+			alt_up_character_lcd_string(char_lcd_dev, songDetailList[currSong]->name);
 
-			if( openFileInSD( songList[currSong], &file_handle ) == 0)
+			char temp[ID_LENGTH + EXTENSION_LENGTH];
+			strcpy( temp, songDetailList[currSong]->id );
+			strcat( temp, ".wav" );
+			if( openFileInSD( temp, &file_handle ) == 0)
 			{
 				// skip the header
 				for(i = 0; i < WAV_HEADER_SIZE; i++)
@@ -351,6 +319,10 @@ int streamSong( short int file_handle )
 	return 0;
 }
 
+/*
+ * stop playing the song
+ * close the file
+ */
 void stopSong( short int file_handle )
 {
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
@@ -453,6 +425,9 @@ char closeFileInSD( short int file_handle )
 	}
 }
 
+/* Reads all the song details in the song list
+ * returns an array of songDetail struct if successful, NULL otherwise
+ */
 songDetail** getListOfSongDetails()
 {
 	songDetail** songList;
@@ -487,13 +462,16 @@ songDetail** getListOfSongDetails()
 		}
 
 		// Debugging purpose
-		printf( "Song: %s %s %s %s\n", songList[i]->id, songList[i]->name, songList[i]->artist, songList[i]->rating );
+		printf( "Song: %s(sizeOfID: %d) %s %s %s\n", songList[i]->id, (int)strlen( songList[i]->id ), songList[i]->name, songList[i]->artist, songList[i]->rating );
 	}
 
 	closeFileInSD( file_handle );
 	return songList;
 }
 
+/* Initializes songDetail struct to have memory allocated
+ * return 0 if successful, -1 otherwise
+ */
 char initializeSongDetail( songDetail* song )
 {
 	song->id = (char*)malloc( ID_LENGTH );
@@ -510,6 +488,9 @@ char initializeSongDetail( songDetail* song )
 	return 0;
 }
 
+/* Reads id, name, artist, and rating of the song
+ * Returns the pointer to the songDetail struct if successful, NULL otherwise
+ */
 songDetail* readDetailForOneSong( short int file_handle )
 {
 	songDetail* song = (songDetail*)malloc(sizeof(songDetail));
@@ -533,7 +514,7 @@ songDetail* readDetailForOneSong( short int file_handle )
 		return NULL;
 
 	/* Removes the carraige return character */
-	song->id = &song->id[1];
+	song->id = &(song->id[2]);
 
 	return song;
 }
@@ -594,6 +575,10 @@ char readACharFromSD( short int file_handle )
 	return byte;
 }
 
+/*
+ * read keys and update the current state
+ * used while playing
+ */
 void updateState()
 {
 	char key = IORD_8DIRECT(keys, 0);
@@ -624,7 +609,5 @@ void updateState()
 	{
 		state = NEXT;
 	}
-
-
 }
 
