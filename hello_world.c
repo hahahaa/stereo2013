@@ -39,7 +39,7 @@ const int RATING_LENGTH = 3;
 
 //const int SONG_SIZE = 2000;
 //const int SONG_SIZE = 65534/2;	//around 0.5 second long
-const int SONG_SIZE = 65534;	//around 1 second long
+const int SONG_SIZE = 65534 * 2;	//around 1 second long
 //const int SONG_SIZE = 196602;	//around 3 seconds long
 const int WAV_HEADER_SIZE = 44;
 const int SAMPLE_SIZE = 96;
@@ -96,6 +96,8 @@ void sendStringToMiddleMan( char* str );
 void getSongListFromMiddleManAndPrintForDebuggingPurpose();
 char* getWordFromMiddleMan();
 unsigned char getByteFromMiddleMan();
+int isThereSomething();
+void clearMiddleManBuffer();
 
 /* Song Functions */
 int playSong( short int file_handle );
@@ -105,6 +107,7 @@ void audio_isr (void * context, unsigned int irq_id);
 int streamSong( short int file_handle );
 
 /* Update */
+void updateStateFromKeys();
 void updateState();
 
 
@@ -126,7 +129,7 @@ int main()
 	int numSongs;
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
 	sendSongListToMiddleMan( songDetailList, numSongs );
-	getSongListFromMiddleManAndPrintForDebuggingPurpose();
+	//getSongListFromMiddleManAndPrintForDebuggingPurpose();
 
 	int cc;
 	for(cc = 0; cc < MAX_NUMBER_SONGS; cc++)
@@ -186,7 +189,7 @@ int main()
 			playSong( file_handle );
 			stopSong( file_handle );
 
-			if(state == NEXT_PLAY)
+			if(state == NEXT_PLAY || state == PLAYING_NORMAL)
 			{
 				nextSong();
 				state = PLAYING_NORMAL;
@@ -197,11 +200,7 @@ int main()
 	return 0;
 }
 
-/*
- * read keys and update the current state
- * used while playing
- */
-void updateState()
+void updateStateFromKeys()
 {
 	char key = IORD_8DIRECT(keys, 0);
 	while(IORD_8DIRECT(keys, 0) != 0);
@@ -231,6 +230,23 @@ void updateState()
 	{
 		state = NEXT_PLAY;
 	}
+}
+
+/*
+ * read keys and update the current state
+ * used while playing
+ */
+void updateState()
+{
+	updateStateFromKeys();
+	char* temp;
+
+	if ( isThereSomething() )
+	{
+		printf ( "dasklfjsdlf\n" );
+		temp = getWordFromMiddleMan();
+	}
+
 }
 
 /*
@@ -306,14 +322,14 @@ void audio_isr (void * context, unsigned int irq_id)
 			song = streamB;
 			song_index = 0;
 			stream_flag = 1;
-			//printf("playing B\n");
+			printf("playing B\n");
 		}
 		else if(stream_flag == 1 && song_index >= streamB_size)
 		{
 			song = streamA;
 			song_index = 0;
 			stream_flag = 0;
-			//printf("playing A\n");
+			printf("playing A\n");
 		}
 	}
 
@@ -338,12 +354,12 @@ int streamSong( short int file_handle )
 	if(flag == 1)
 	{
 		stream = streamA;
-		//printf("streaming A\n");
+		printf("streaming A\n");
 	}
 	else
 	{
 		stream = streamB;
-		//printf("streaming B\n");
+		printf("streaming B\n");
 	}
 
 	for(i = 0; i < SONG_SIZE; i++)
@@ -427,12 +443,8 @@ void initialization()
 
 	/* UART RS232 */
 	uart = alt_up_rs232_open_dev("/dev/rs232_0");
-	unsigned char parity;
-	unsigned char data;
 
-	while (alt_up_rs232_get_used_space_in_read_FIFO(uart)) {
-		alt_up_rs232_read_data(uart, &data, &parity);
-	}
+	clearMiddleManBuffer();
 
 	/* Interrupt */
 	alt_up_audio_enable_write_interrupt(audio);
@@ -523,6 +535,22 @@ unsigned char getByteFromMiddleMan()
 	return data;
 }
 
+int isThereSomething()
+{
+	return alt_up_rs232_get_used_space_in_read_FIFO(uart);
+}
+
+void clearMiddleManBuffer()
+{
+	unsigned char data;
+	unsigned char parity;
+
+	while (alt_up_rs232_get_used_space_in_read_FIFO(uart))
+	{
+		alt_up_rs232_read_data(uart, &data, &parity);
+	}
+}
+
 /* Reads the song list from the middle man and prints the song list in one line.
  * This function is used to check whether sending of song list work or not.
  * The algorithm of this function can also be used by Daniel to implement
@@ -567,6 +595,8 @@ void getSongListFromMiddleManAndPrintForDebuggingPurpose()
 	temp[m] = '\0';
 
 	printf( "Data Received: %s\n", temp );
+
+	clearMiddleManBuffer();
 
 	free( temp );
 }
