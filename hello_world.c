@@ -38,22 +38,26 @@ const int ARTIST_LENGTH = 21;
 const int RATING_LENGTH = 3;
 
 //const int SONG_SIZE = 2000;
-//const int SONG_SIZE = 65534/2;	//around 0.5 second long
-const int SONG_SIZE = 65534 * 2;	//around 1 second long
+//const int SONG_SIZE = 32766;	//around 0.5 second long
+const int SONG_SIZE = 65534;	//around 1 second long
+//const int SONG_SIZE = 131068;	//around 2 second long
 //const int SONG_SIZE = 196602;	//around 3 seconds long
 const int WAV_HEADER_SIZE = 44;
 const int SAMPLE_SIZE = 96;
 int song_index;	// 0 <= song_count < SONG_SIZE
 unsigned int song_wav[2];
 unsigned int song_sample[96];
-unsigned int* streamA;
-unsigned int* streamB;
+//unsigned int* streamA;
+//unsigned int* streamB;
+unsigned int streamA[65534];
+unsigned int streamB[65534];
 int streamA_size;
 int streamB_size;
 int stream_flag;
 int state;
 int currSong;
 int shuffle_flag;
+int aa;
 
 typedef struct {
 	char* id;
@@ -109,7 +113,6 @@ int streamSong( short int file_handle );
 /* Update */
 void updateStateFromKeys();
 void updateState();
-
 
 int main()
 {
@@ -259,26 +262,27 @@ int playSong( short int file_handle )
 {
 	alt_irq_disable(AUDIO_0_IRQ);
 
-	int i;
+	int isLastSecond;
 	int prev_stream_flag;
 
-	stream_flag = 1;
-	streamA_size = 0;
-	streamB_size = 0;
+	streamA_size = SONG_SIZE;
+	streamB_size = SONG_SIZE;
 	song_index = 0;
 
+	stream_flag = 1;
 	streamSong( file_handle );	//save to stream A
 	stream_flag = 0;	//play stream A
 
-	alt_irq_enable(AUDIO_0_IRQ);
 	prev_stream_flag = stream_flag;
-	i = 0;
-	while(i == 0)
+	isLastSecond = 0;
+
+	alt_irq_enable(AUDIO_0_IRQ);
+
+	while(1)
 	{
 		if(state == PLAYING_NORMAL)
 		{
-			i = streamSong( file_handle );
-			//printf("done streaming\n");
+			isLastSecond = streamSong( file_handle );
 			while(stream_flag == prev_stream_flag);	//wait to switch stream
 			prev_stream_flag = stream_flag;
 		}
@@ -288,6 +292,13 @@ int playSong( short int file_handle )
 		}
 		else if(state == STOP || state == NEXT_PLAY)
 			break;
+
+		if(isLastSecond)
+		{
+			// play the last second
+			while(stream_flag == prev_stream_flag);
+			break;
+		}
 	}
 
 	return 0;
@@ -317,19 +328,19 @@ void audio_isr (void * context, unsigned int irq_id)
 
 		song_sample[cc] = ((song_wav[1]<<8)|song_wav[0])<<8;
 
-		if(stream_flag == 0 && song_index >= streamA_size)
+		if(stream_flag == 0 && song_index == streamA_size)
 		{
+			printf("s A p B %d  || %d\n", aa, song_index);
 			song = streamB;
 			song_index = 0;
 			stream_flag = 1;
-			printf("playing B\n");
 		}
-		else if(stream_flag == 1 && song_index >= streamB_size)
+		else if(stream_flag == 1 && song_index == streamB_size)
 		{
+			printf("s B p A %d  || %d\n", aa, song_index);
 			song = streamA;
 			song_index = 0;
 			stream_flag = 0;
-			printf("playing A\n");
 		}
 	}
 
@@ -341,7 +352,7 @@ void audio_isr (void * context, unsigned int irq_id)
  * precondition: file_handle, streamA and streamB are not null
  * save the song temporary to stream A when stream_flag == 1
  * otherwise save to stream B
- * return -1 if the file_handler reaches eof
+ * return 1 if the file_handler reaches eof
  * otherwise return 0
  */
 int streamSong( short int file_handle )
@@ -354,12 +365,10 @@ int streamSong( short int file_handle )
 	if(flag == 1)
 	{
 		stream = streamA;
-		printf("streaming A\n");
 	}
 	else
 	{
 		stream = streamB;
-		printf("streaming B\n");
 	}
 
 	for(i = 0; i < SONG_SIZE; i++)
@@ -371,16 +380,19 @@ int streamSong( short int file_handle )
 				streamA_size = i;
 			else
 				streamB_size = i;
-			return -1;
+			return 1;
 		}
 
 		stream[i] = buf;
+		aa = i;	//debug
 
 		updateState();
-		while(state == PAUSED)
-			updateState();
+
 		if(state == STOP || state == NEXT_PLAY)
 			break;
+
+		while(state == PAUSED)
+			updateState();
 	}
 
 	if(flag == 1)
@@ -434,8 +446,8 @@ void initialization()
 	audio = alt_up_audio_open_dev("/dev/audio_0");
 	alt_up_audio_reset_audio_core(audio);
 
-	streamA = (unsigned int*)malloc(SONG_SIZE*sizeof(unsigned int));
-	streamB = (unsigned int*)malloc(SONG_SIZE*sizeof(unsigned int));
+	//streamA = (unsigned int*)malloc(SONG_SIZE*sizeof(unsigned int));
+	//streamB = (unsigned int*)malloc(SONG_SIZE*sizeof(unsigned int));
 	streamA_size = 0;
 	streamB_size = 0;
 	stream_flag = 0;
