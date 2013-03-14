@@ -57,6 +57,7 @@ int stream_flag;
 int state;
 int currSong;
 int shuffle_flag;
+int volume;
 int aa;
 
 typedef struct {
@@ -113,6 +114,7 @@ int streamSong( short int file_handle );
 /* Update */
 void updateStateFromKeys();
 void updateState();
+void updateVolume();
 
 int main()
 {
@@ -121,6 +123,8 @@ int main()
 	short int file_handle;
 	currSong = 0;
 	shuffle_flag = 0;
+	volume = 0;
+
 	/*
 	 * 0 stop
 	 * 1 paused
@@ -151,7 +155,11 @@ int main()
 			// read keys
 			key = 0;
 			while(key == 0)
+			{
+				// wait for command
 				key = IORD_8DIRECT(keys, 0);
+				updateVolume();
+			}
 			while(IORD_8DIRECT(keys, 0) != 0);
 
 			if(key == 0x8)	//play
@@ -241,15 +249,24 @@ void updateStateFromKeys()
  */
 void updateState()
 {
+	updateVolume();
 	updateStateFromKeys();
 	char* temp;
 
 	if ( isThereSomething() )
 	{
-		printf ( "dasklfjsdlf\n" );
+		printf ( "there is something\n" );
 		temp = getWordFromMiddleMan();
 	}
+}
 
+/*
+ * read switches and change volume
+ */
+void updateVolume()
+{
+	char sw = IORD_8DIRECT(switches, 0);
+	volume = sw;
 }
 
 /*
@@ -280,27 +297,37 @@ int playSong( short int file_handle )
 
 	while(1)
 	{
-		if(state == PLAYING_NORMAL)
+		//printf("where are u\n");
+		if(state == STOP)
+		{
+			//printf("why why why\n");
+			break;
+		}
+		else if(state == PLAYING_NORMAL)
 		{
 			isLastSecond = streamSong( file_handle );
-			while(stream_flag == prev_stream_flag);	//wait to switch stream
+			//printf("isLastSecond : %d\n", isLastSecond);
+			while(stream_flag == prev_stream_flag)
+				if(state == STOP || state == NEXT_PLAY)
+					stream_flag = !prev_stream_flag;
 			prev_stream_flag = stream_flag;
 		}
 		else if(state == NEXT_PLAY)	//next is pressed
 		{
 			return 1;
 		}
-		else if(state == STOP || state == NEXT_PLAY)
-			break;
 
 		if(isLastSecond)
 		{
+			printf("last sec\n");
 			// play the last second
 			while(stream_flag == prev_stream_flag);
 			break;
 		}
+		//printf("where am i\n");
 	}
 
+	//printf("hstop\n");
 	return 0;
 }
 
@@ -327,6 +354,21 @@ void audio_isr (void * context, unsigned int irq_id)
 		song_index+=2;
 
 		song_sample[cc] = ((song_wav[1]<<8)|song_wav[0])<<8;
+
+		if( volume == 1)
+		{
+			if(song_sample[cc] >= 0x00080000)
+				song_sample[cc] = (song_sample[cc]<<(1))|0x00008000;
+			else
+				song_sample[cc] = song_sample[cc]<<(1);
+		}
+		else if(volume == 2)
+		{
+			if(song_sample[cc] >= 0x00080000)
+				song_sample[cc] = (song_sample[cc]<<(3))|0x00008000;
+			else
+				song_sample[cc] = song_sample[cc]<<(3);
+		}
 
 		if(stream_flag == 0 && song_index == streamA_size)
 		{
@@ -388,11 +430,15 @@ int streamSong( short int file_handle )
 
 		updateState();
 
-		if(state == STOP || state == NEXT_PLAY)
-			break;
-
 		while(state == PAUSED)
 			updateState();
+
+		if(state == STOP || state == NEXT_PLAY)
+		{
+			printf("stop\n");
+			break;
+		}
+
 	}
 
 	if(flag == 1)
