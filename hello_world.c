@@ -358,10 +358,10 @@ void initialization()
 	//SD card reader
 	sd_card_reference = alt_up_sd_card_open_dev("/dev/Altera_UP_SD_Card_Avalon_Interface_0");
 
-	if ( sd_card_reference )
-		printf( "SD Card port opened.\n" ); // debugging purpose
-	else
+	if ( !sd_card_reference )
 		printf( "Error: SD card port not opened.\n" );
+
+	//printf( "SD Card port opened.\n" ); // debugging purpose
 
 	//Audio
 	av_config = alt_up_av_config_open_dev("/dev/audio_and_video_config_0");
@@ -377,12 +377,12 @@ void initialization()
 	song_index = 0;
 
 	/* UART RS232 */
-	printf("UART Initialization\n");
+	//printf("UART Initialization\n");
 	uart = alt_up_rs232_open_dev("/dev/rs232_0");
 	unsigned char parity;
 	unsigned char data;
 
-	printf("Clearing read buffer to start\n");
+	//printf("Clearing read buffer to start\n");	// debugging purpose
 	while (alt_up_rs232_get_used_space_in_read_FIFO(uart)) {
 		alt_up_rs232_read_data(uart, &data, &parity);
 	}
@@ -497,11 +497,11 @@ char openFileInSD( char* fileName, short int* file_handle_ptr )
 
 	if ( alt_up_sd_card_is_Present() )
 	{
-		printf("SD Card connected.\n");	// debugging purpose
+		//printf("SD Card connected.\n");	// debugging purpose
 
 		if ( alt_up_sd_card_is_FAT16() )
 		{
-			printf("FAT16 file system detected.\n"); // debugging purpose
+			//printf("FAT16 file system detected.\n"); // debugging purpose
 
 			file_handle = alt_up_sd_card_fopen( fileName, false );
 			if ( file_handle == -1 )
