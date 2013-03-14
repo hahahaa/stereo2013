@@ -10,7 +10,6 @@
 #include "altera_up_sd_card_avalon_interface.h"
 #include "altera_up_avalon_audio_and_video_config.h"
 #include "altera_up_avalon_audio.h"
-#include "altera_up_avalon_rs232.h"
 #include "sys/alt_irq.h"
 
 /* Define I/O ports */
@@ -19,10 +18,10 @@
 #define keys (int) 0x00004440
 
 /* Define states */
-#define PLAYING 0
-#define STOP 1
-#define PAUSED 2
-#define NEXT 3
+#define STOP 0
+#define PAUSED 1
+#define PLAYING_NORMAL 2
+#define NEXT_PLAY 3
 
 /* Constants for high level song stuff */
 const int MAX_NUMBER_SONGS = 2;
@@ -32,7 +31,7 @@ const int MAX_DIGIT_OF_MAX_NUM_SONG = 4; // has to include memory for null chara
 const int EXTENSION_LENGTH = 4;
 
 /* Constants for SongDetail; the length includes the null character */
-const int ID_LENGTH = 6;	// id length includes the carriage return character in addition
+const int ID_LENGTH = 5;	// id length includes the carriage return character in addition
 const int NAME_LENGTH = 26;
 const int ARTIST_LENGTH = 21;
 const int RATING_LENGTH = 3;
@@ -52,20 +51,21 @@ int streamA_size;
 int streamB_size;
 int stream_flag;
 int state;
+int currSong;
+int shuffle_flag;
 
 typedef struct {
 	char* id;
 	char* name;
 	char* artist;
 	char* rating;
-} SongDetail;
+} songDetail;
 
 /* Device references */
 alt_up_sd_card_dev *sd_card_reference;
 alt_up_av_config_dev * av_config;
 alt_up_audio_dev * audio;
 alt_up_character_lcd_dev * char_lcd_dev;
-alt_up_rs232_dev * uart;
 
 
 /* Function prototypes */
@@ -79,26 +79,15 @@ char closeFileInSD( short int file_handle );
 char readACharFromSD( short int file_handle );
 
 /* Read song list functions */
-SongDetail** getListOfSongDetails( int *numSongs );
-char initializeSongDetail( SongDetail* song );
-SongDetail* readDetailForOneSong( short int file_handle );
+songDetail** getListOfSongDetails();
+char initializeSongDetail( songDetail* song );
+songDetail* readDetailForOneSong( short int file_handle );
 char readWordFromSD( char* name, const int length, short int file_handle );
-
-/* Send song list functions */
-void sendSongListToMiddleMan( SongDetail** songList, int numSong );
-void sendOneSongDetailToMiddleMan( SongDetail* song );
-
-/* DE2 to MiddleMan function */
-void sendStringToMiddleMan( char* str );
-
-/* MiddleMan to DE2 function */
-void getSongListFromMiddleManAndPrintForDebuggingPurpose();
-char* getWordFromMiddleMan();
-unsigned char getByteFromMiddleMan();
 
 /* Song Functions */
 int playSong( short int file_handle );
 void stopSong( short int file_handle );
+void nextSong();
 void audio_isr (void * context, unsigned int irq_id);
 int streamSong( short int file_handle );
 
@@ -111,21 +100,17 @@ int main()
 	initialization();
 	char key;
 	short int file_handle;
-	int i;
-	int currSong = 0;
-	int keepPlaying = 0;
+	currSong = 0;
+	shuffle_flag = 0;
 	/*
 	 * 0 stop
-	 * 1 playing
-	 * 2 paused
-	 * 3 next
-	 */
+	 * 1 paused
+	 * 2 playing normal
+	 * 3 next and play
+	*/
 	state = STOP;
 
-	int numSongs;
-	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
-	sendSongListToMiddleMan( songDetailList, numSongs );
-	getSongListFromMiddleManAndPrintForDebuggingPurpose();
+	songDetail** songDetailList = getListOfSongDetails();
 
 	int cc;
 	for(cc = 0; cc < MAX_NUMBER_SONGS; cc++)
@@ -133,27 +118,34 @@ int main()
 
 	while(1)
 	{
-		key = IORD_8DIRECT(keys, 0);
-		while(IORD_8DIRECT(keys, 0) != 0);
-
-		if(key == 0x8)	//play
-			state = PLAYING;
-		else if(key == 0x4)	//stop
-			state = STOP;
-		else if(key == 0x2)	//next
-			state = NEXT;
-
 		if(state == STOP)
 		{
-			keepPlaying = 0;
+			alt_up_character_lcd_init(char_lcd_dev);
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "STOP   ");
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
 			alt_up_character_lcd_string(char_lcd_dev, songDetailList[currSong]->name);
+
+			// read keys
+			key = 0;
+			while(key == 0)
+				key = IORD_8DIRECT(keys, 0);
+			while(IORD_8DIRECT(keys, 0) != 0);
+
+			if(key == 0x8)	//play
+				state = PLAYING_NORMAL;
+			else if(key == 0x4)	//stop
+				state = STOP;
+			else if(key == 0x2)	//next
+			{
+				nextSong();
+				alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
+				alt_up_character_lcd_string(char_lcd_dev, songDetailList[currSong]->name);
+			}
 		}
-		else if(state == PLAYING)
+		else if(state == PLAYING_NORMAL)
 		{
-			keepPlaying = 1;
+			alt_up_character_lcd_init(char_lcd_dev);
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
@@ -165,7 +157,7 @@ int main()
 			if( openFileInSD( temp, &file_handle ) == 0)
 			{
 				// skip the header
-				for(i = 0; i < WAV_HEADER_SIZE; i++)
+				for(cc = 0; cc < WAV_HEADER_SIZE; cc++)
 					alt_up_sd_card_read( file_handle );
 				printf("file opened\n");
 			}
@@ -175,17 +167,14 @@ int main()
 				exit(1);
 			}
 
-			if( playSong( file_handle ) == 0)
-				state = NEXT;
-		}
-		else if(state == NEXT)
-		{
+			playSong( file_handle );
 			stopSong( file_handle );
-			currSong = (currSong + 1) % MAX_NUMBER_SONGS;
-			if(!keepPlaying)
-				state = STOP;
-			else
-				state = PLAYING;
+
+			if(state == NEXT_PLAY)
+			{
+				nextSong();
+				state = PLAYING_NORMAL;
+			}
 		}
 	}
 
@@ -195,7 +184,7 @@ int main()
 /*
  * play a song
  * stops when KEY3 is pressed
- * return 1 if the song stopped before ending
+ * return 1 if the song stopped before ending (user wants to play the next song)
  * otherwise 0
  */
 int playSong( short int file_handle )
@@ -218,23 +207,21 @@ int playSong( short int file_handle )
 	i = 0;
 	while(i == 0)
 	{
-		if(state == PLAYING)
+		if(state == PLAYING_NORMAL)
 		{
 			i = streamSong( file_handle );
 			//printf("done streaming\n");
 			while(stream_flag == prev_stream_flag);	//wait to switch stream
 			prev_stream_flag = stream_flag;
 		}
-		else if(state == STOP)
+		else if(state == NEXT_PLAY)	//next is pressed
 		{
-			stopSong( file_handle );
 			return 1;
 		}
-		else if(state == NEXT)
+		else if(state == STOP || state == NEXT_PLAY)
 			break;
 	}
 
-	stopSong( file_handle );
 	return 0;
 }
 
@@ -324,7 +311,7 @@ int streamSong( short int file_handle )
 		updateState();
 		while(state == PAUSED)
 			updateState();
-		if(state == STOP || state == NEXT)
+		if(state == STOP || state == NEXT_PLAY)
 			break;
 	}
 
@@ -349,6 +336,14 @@ void stopSong( short int file_handle )
 	closeFileInSD(file_handle);
 }
 
+/*
+ * set the next song
+ */
+void nextSong()
+{
+	currSong = (currSong + 1) % MAX_NUMBER_SONGS;
+}
+
 void initialization()
 {
 	//LCD screen
@@ -360,10 +355,10 @@ void initialization()
 	//SD card reader
 	sd_card_reference = alt_up_sd_card_open_dev("/dev/Altera_UP_SD_Card_Avalon_Interface_0");
 
-	if ( !sd_card_reference )
+	if ( sd_card_reference )
+		printf( "SD Card port opened.\n" ); // debugging purpose
+	else
 		printf( "Error: SD card port not opened.\n" );
-
-	//printf( "SD Card port opened.\n" ); // debugging purpose
 
 	//Audio
 	av_config = alt_up_av_config_open_dev("/dev/audio_and_video_config_0");
@@ -378,152 +373,10 @@ void initialization()
 	stream_flag = 0;
 	song_index = 0;
 
-	/* UART RS232 */
-	//printf("UART Initialization\n");
-	uart = alt_up_rs232_open_dev("/dev/rs232_0");
-	unsigned char parity;
-	unsigned char data;
-
-	//printf("Clearing read buffer to start\n");	// debugging purpose
-	while (alt_up_rs232_get_used_space_in_read_FIFO(uart)) {
-		alt_up_rs232_read_data(uart, &data, &parity);
-	}
-
 	//Interrupt
 	alt_up_audio_enable_write_interrupt(audio);
 	alt_irq_register(AUDIO_0_IRQ, 0, (alt_isr_func)audio_isr);
 	alt_irq_disable(AUDIO_0_IRQ);
-}
-
-/* Sends the song list to the middle man words by words
- * songList cannot be NULL
- */
-void sendSongListToMiddleMan( SongDetail** songList, int numSong )
-{
-	int i;
-	char* temp = malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
-	sprintf( temp, "%d", numSong );
-
-	printf("Sending the message to the Middleman\n");
-	sendStringToMiddleMan( temp );
-
-	for ( i = 0; i < numSong; i++ )
-	{
-		sendOneSongDetailToMiddleMan( songList[i] );
-	}
-
-	free( temp );
-}
-
-/* Sends the detail of one song to the middle man
- * song cannot be NULL
- */
-void sendOneSongDetailToMiddleMan( SongDetail* song )
-{
-	sendStringToMiddleMan( song->id );
-	sendStringToMiddleMan( song->name );
-	sendStringToMiddleMan( song->artist );
-	sendStringToMiddleMan( song->rating );
-}
-
-/* Sends one string to the middle man
- * str cannot be NULL
- */
-void sendStringToMiddleMan( char* str )
-{
-	int i;
-
-	alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
-
-	for ( i = 0; i < strlen(str); i++ )
-		alt_up_rs232_write_data( uart, str[i] );
-}
-
-/* Reads a string from the middle man; the first byte needs to be the length of the string
- * This means the string cannot be longer than 255 letters
- * returns the pointer to the string
- */
-char* getWordFromMiddleMan()
-{
-	int length = getByteFromMiddleMan();
-	char* str = (char*)malloc( length );
-
-	if ( !str )
-	{
-		printf( "Error: no memory to malloc in getWordFromMiddleMan().\n" );
-		return NULL;
-	}
-
-	int i;
-	for ( i = 0; i < length; i++ )
-	{
-		str[i] = getByteFromMiddleMan();
-	}
-	str[i] = '\0';
-
-	return str;
-}
-
-/* Reads one byte from the middle man
- * returns the byte
- */
-unsigned char getByteFromMiddleMan()
-{
-	unsigned char data;
-	unsigned char parity;
-
-	while ( alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0 );
-	alt_up_rs232_read_data( uart, &data, &parity );
-
-	return data;
-}
-
-/* Reads the song list from the middle man and prints the song list in one line.
- * This function is used to check whether sending of song list work or not.
- * The algorithm of this function can also be used by Daniel to implement
- * 		reading from middle man in Android using Java.
- */
-void getSongListFromMiddleManAndPrintForDebuggingPurpose()
-{
-	unsigned char data;
-	unsigned char parity;
-	int i, j, k, m = 0;
-	char* numSong;
-
-	printf("Waiting for data to come back from the Middleman\n");
-
-	numSong = getWordFromMiddleMan();
-
-	int num_to_receive = atoi( numSong );
-	char* temp = (char*)malloc( num_to_receive * (ID_LENGTH + NAME_LENGTH + ARTIST_LENGTH + RATING_LENGTH) );
-
-	printf("About to receive %d song details:\n", num_to_receive);
-
-	for ( i = 0; i < num_to_receive; i++ )
-	{
-		for ( j = 0; j < 4; j++ )
-		{
-			while ( alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0 );
-			alt_up_rs232_read_data( uart, &data, &parity );
-			int lengthOfData = (int)data;
-
-			for ( k = 0; k < lengthOfData; k++ )
-			{
-				while (alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0);
-
-				alt_up_rs232_read_data( uart, &data, &parity );
-
-				temp[m++] = data;
-				//printf( "%c", data );
-			}
-			temp[m++] = ' ';
-		}
-	}
-	temp[m] = '\0';
-
-	printf( "Data Received: %s\n", temp );
-
-	free( temp );
 }
 
 /* Opens a file and stores the file_handle in the memory pointed by file_handle_ptr
@@ -535,11 +388,11 @@ char openFileInSD( char* fileName, short int* file_handle_ptr )
 
 	if ( alt_up_sd_card_is_Present() )
 	{
-		//printf("SD Card connected.\n");	// debugging purpose
+		printf("SD Card connected.\n");	// debugging purpose
 
 		if ( alt_up_sd_card_is_FAT16() )
 		{
-			//printf("FAT16 file system detected.\n"); // debugging purpose
+			printf("FAT16 file system detected.\n"); // debugging purpose
 
 			file_handle = alt_up_sd_card_fopen( fileName, false );
 			if ( file_handle == -1 )
@@ -587,12 +440,13 @@ char closeFileInSD( short int file_handle )
 /* Reads all the song details in the song list
  * returns an array of songDetail struct if successful, NULL otherwise
  */
-SongDetail** getListOfSongDetails( int *numSongs )
+songDetail** getListOfSongDetails()
 {
-	SongDetail** songList;
+	songDetail** songList;
 	short int file_handle;
 	int i;
 	char* numSongsStr = (char*)malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
+	int numSongs;
 
 	if ( !numSongsStr )
 	{
@@ -600,23 +454,17 @@ SongDetail** getListOfSongDetails( int *numSongs )
 		return NULL;
 	}
 
+
 	openFileInSD( "SONGLIST.TXT", &file_handle );
 
 	if ( readWordFromSD( numSongsStr, MAX_NUM_SONGS, file_handle ) == -1 )
 		return NULL;
 
-	*numSongs = atoi( numSongsStr );
+	numSongs = atoi( numSongsStr );
 
-	songList = malloc( *numSongs * sizeof(SongDetail) );
+	songList = malloc( numSongs * sizeof(songDetail) );
 
-	if ( !songList )
-	{
-		printf( "Error: no memory to allocate memory for songList.\n" );
-		closeFileInSD( file_handle );
-		return NULL;
-	}
-
-	for ( i = 0; i < *numSongs; i++ )
+	for ( i = 0; i < numSongs; i++ )
 	{
 		songList[i] = readDetailForOneSong( file_handle );
 		if ( !songList[i] )
@@ -633,10 +481,10 @@ SongDetail** getListOfSongDetails( int *numSongs )
 	return songList;
 }
 
-/* Initializes SongDetail struct to have memory allocated
+/* Initializes songDetail struct to have memory allocated
  * return 0 if successful, -1 otherwise
  */
-char initializeSongDetail( SongDetail* song )
+char initializeSongDetail( songDetail* song )
 {
 	song->id = (char*)malloc( ID_LENGTH );
 	song->name = (char*)malloc( NAME_LENGTH );
@@ -653,11 +501,11 @@ char initializeSongDetail( SongDetail* song )
 }
 
 /* Reads id, name, artist, and rating of the song
- * Returns the pointer to the SongDetail struct if successful, NULL otherwise
+ * Returns the pointer to the songDetail struct if successful, NULL otherwise
  */
-SongDetail* readDetailForOneSong( short int file_handle )
+songDetail* readDetailForOneSong( short int file_handle )
 {
-	SongDetail* song = (SongDetail*)malloc(sizeof(SongDetail));
+	songDetail* song = (songDetail*)malloc(sizeof(songDetail));
 	char t1, t2, t3, t4;
 
 	if ( !song )
@@ -710,7 +558,7 @@ char readWordFromSD( char* name, const int length, short int file_handle )
 
 	if ( ch == -1 )
 	{
-		printf( "Error: readDataFromSD Failed.\n" );
+		printf( "Error: readWordFromSD Failed.\n" );
 		return -1;
 	}
 
@@ -750,7 +598,7 @@ void updateState()
 
 	if(key == 0x8)	//play or paused
 	{
-		if(state == PLAYING)
+		if(state == PLAYING_NORMAL)
 		{
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PAUSED ");
@@ -762,7 +610,7 @@ void updateState()
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
 			alt_irq_enable(AUDIO_0_IRQ);
-			state = PLAYING;
+			state = PLAYING_NORMAL;
 		}
 	}
 	else if(key == 0x4)	//stop
@@ -771,7 +619,6 @@ void updateState()
 	}
 	else if(key == 0x2)	//next
 	{
-		state = NEXT;
+		state = NEXT_PLAY;
 	}
 }
-
