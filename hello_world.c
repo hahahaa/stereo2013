@@ -10,6 +10,7 @@
 #include "altera_up_sd_card_avalon_interface.h"
 #include "altera_up_avalon_audio_and_video_config.h"
 #include "altera_up_avalon_audio.h"
+#include "altera_up_avalon_rs232.h"
 #include "sys/alt_irq.h"
 
 /* Define I/O ports */
@@ -31,7 +32,7 @@ const int MAX_DIGIT_OF_MAX_NUM_SONG = 4; // has to include memory for null chara
 const int EXTENSION_LENGTH = 4;
 
 /* Constants for SongDetail; the length includes the null character */
-const int ID_LENGTH = 5;	// id length includes the carriage return character in addition
+const int ID_LENGTH = 6;	// id length includes the carriage return character in addition
 const int NAME_LENGTH = 26;
 const int ARTIST_LENGTH = 21;
 const int RATING_LENGTH = 3;
@@ -57,13 +58,14 @@ typedef struct {
 	char* name;
 	char* artist;
 	char* rating;
-} songDetail;
+} SongDetail;
 
 /* Device references */
 alt_up_sd_card_dev *sd_card_reference;
 alt_up_av_config_dev * av_config;
 alt_up_audio_dev * audio;
 alt_up_character_lcd_dev * char_lcd_dev;
+alt_up_rs232_dev * uart;
 
 
 /* Function prototypes */
@@ -77,10 +79,20 @@ char closeFileInSD( short int file_handle );
 char readACharFromSD( short int file_handle );
 
 /* Read song list functions */
-songDetail** getListOfSongDetails();
-char initializeSongDetail( songDetail* song );
-songDetail* readDetailForOneSong( short int file_handle );
+SongDetail** getListOfSongDetails( int *numSongs );
+char initializeSongDetail( SongDetail* song );
+SongDetail* readDetailForOneSong( short int file_handle );
 char readWordFromSD( char* name, const int length, short int file_handle );
+
+/* Send song list functions */
+void sendSongListToMiddleMan( SongDetail** songList, int numSong );
+void sendOneSongDetailToMiddleMan( SongDetail* song );
+
+/* DE2 to MiddleMan function */
+void sendStringToMiddleMan( char* str );
+
+/* MiddleMan to DE2 function */
+void getSongListFromMiddleManAndPrintForDebuggingPurpose();
 
 /* Song Functions */
 int playSong( short int file_handle );
@@ -108,7 +120,10 @@ int main()
 	 */
 	state = STOP;
 
-	songDetail** songDetailList = getListOfSongDetails();
+	int numSongs;
+	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
+	sendSongListToMiddleMan( songDetailList, numSongs );
+	getSongListFromMiddleManAndPrintForDebuggingPurpose();
 
 	int cc;
 	for(cc = 0; cc < MAX_NUMBER_SONGS; cc++)
@@ -361,10 +376,116 @@ void initialization()
 	stream_flag = 0;
 	song_index = 0;
 
+	/* UART RS232 */
+	printf("UART Initialization\n");
+	uart = alt_up_rs232_open_dev("/dev/rs232_0");
+	unsigned char parity;
+	unsigned char data;
+
+	printf("Clearing read buffer to start\n");
+	while (alt_up_rs232_get_used_space_in_read_FIFO(uart)) {
+		alt_up_rs232_read_data(uart, &data, &parity);
+	}
+
 	//Interrupt
 	alt_up_audio_enable_write_interrupt(audio);
 	alt_irq_register(AUDIO_0_IRQ, 0, (alt_isr_func)audio_isr);
 	alt_irq_disable(AUDIO_0_IRQ);
+}
+
+void sendSongListToMiddleMan( SongDetail** songList, int numSong )
+{
+	int i;
+	char* temp = malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
+	sprintf( temp, "%d", numSong );
+
+	printf("Sending the message to the Middleman\n");
+	sendStringToMiddleMan( temp );
+
+	for ( i = 0; i < numSong; i++ )
+	{
+		sendOneSongDetailToMiddleMan( songList[i] );
+	}
+
+	free( temp );
+}
+
+void sendOneSongDetailToMiddleMan( SongDetail* song )
+{
+	sendStringToMiddleMan( song->id );
+	sendStringToMiddleMan( song->name );
+	sendStringToMiddleMan( song->artist );
+	sendStringToMiddleMan( song->rating );
+}
+
+void sendStringToMiddleMan( char* str )
+{
+	int i;
+
+	alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
+
+	for ( i = 0; i < strlen(str); i++ )
+		alt_up_rs232_write_data( uart, str[i] );
+}
+
+
+// implement an API for get data from middleman
+
+
+void getSongListFromMiddleManAndPrintForDebuggingPurpose()
+{
+	unsigned char data;
+	unsigned char parity;
+	int i, j, k, m = 0;
+	char* numSong = malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
+
+	printf("Waiting for data to come back from the Middleman\n");
+
+	while ( alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0 );
+	alt_up_rs232_read_data( uart, &data, &parity );
+
+	j = (int)data;
+	//printf( "j is: %d\n", j );
+	for ( i = 0; i < j; i++ )
+	{
+		while ( alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0 );
+		alt_up_rs232_read_data( uart, &data, &parity );
+		numSong[i] = data;
+		//printf( "numSong[%d]is: %c\n", i, numSong[i] );
+	}
+	numSong[i] = '\0';
+
+	int num_to_receive = atoi( numSong );
+	char* temp = (char*)malloc( num_to_receive * (ID_LENGTH + NAME_LENGTH + ARTIST_LENGTH + RATING_LENGTH) );
+
+	printf("About to receive %d song details:\n", num_to_receive);
+
+
+	for ( i = 0; i < num_to_receive; i++ )
+	{
+		for ( j = 0; j < 4; j++ )
+		{
+			while ( alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0 );
+			alt_up_rs232_read_data( uart, &data, &parity );
+			int lengthOfData = (int)data;
+
+			for ( k = 0; k < lengthOfData; k++ )
+			{
+				while (alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0);
+
+				alt_up_rs232_read_data( uart, &data, &parity );
+
+				temp[m++] = data;
+				//printf( "%c", data );
+			}
+			temp[m++] = ' ';
+		}
+	}
+	temp[m] = '\0';
+
+	printf( "Data Received: %s\n", temp );
+
+	free( temp );
 }
 
 /* Opens a file and stores the file_handle in the memory pointed by file_handle_ptr
@@ -428,13 +549,12 @@ char closeFileInSD( short int file_handle )
 /* Reads all the song details in the song list
  * returns an array of songDetail struct if successful, NULL otherwise
  */
-songDetail** getListOfSongDetails()
+SongDetail** getListOfSongDetails( int *numSongs )
 {
-	songDetail** songList;
+	SongDetail** songList;
 	short int file_handle;
 	int i;
 	char* numSongsStr = (char*)malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
-	int numSongs;
 
 	if ( !numSongsStr )
 	{
@@ -442,17 +562,23 @@ songDetail** getListOfSongDetails()
 		return NULL;
 	}
 
-
 	openFileInSD( "SONGLIST.TXT", &file_handle );
 
 	if ( readWordFromSD( numSongsStr, MAX_NUM_SONGS, file_handle ) == -1 )
 		return NULL;
 
-	numSongs = atoi( numSongsStr );
+	*numSongs = atoi( numSongsStr );
 
-	songList = malloc( numSongs * sizeof(songDetail) );
+	songList = malloc( *numSongs * sizeof(SongDetail) );
 
-	for ( i = 0; i < numSongs; i++ )
+	if ( !songList )
+	{
+		printf( "Error: no memory to allocate memory for songList.\n" );
+		closeFileInSD( file_handle );
+		return NULL;
+	}
+
+	for ( i = 0; i < *numSongs; i++ )
 	{
 		songList[i] = readDetailForOneSong( file_handle );
 		if ( !songList[i] )
@@ -469,10 +595,10 @@ songDetail** getListOfSongDetails()
 	return songList;
 }
 
-/* Initializes songDetail struct to have memory allocated
+/* Initializes SongDetail struct to have memory allocated
  * return 0 if successful, -1 otherwise
  */
-char initializeSongDetail( songDetail* song )
+char initializeSongDetail( SongDetail* song )
 {
 	song->id = (char*)malloc( ID_LENGTH );
 	song->name = (char*)malloc( NAME_LENGTH );
@@ -489,11 +615,11 @@ char initializeSongDetail( songDetail* song )
 }
 
 /* Reads id, name, artist, and rating of the song
- * Returns the pointer to the songDetail struct if successful, NULL otherwise
+ * Returns the pointer to the SongDetail struct if successful, NULL otherwise
  */
-songDetail* readDetailForOneSong( short int file_handle )
+SongDetail* readDetailForOneSong( short int file_handle )
 {
-	songDetail* song = (songDetail*)malloc(sizeof(songDetail));
+	SongDetail* song = (SongDetail*)malloc(sizeof(SongDetail));
 	char t1, t2, t3, t4;
 
 	if ( !song )
