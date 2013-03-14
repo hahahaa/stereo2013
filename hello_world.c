@@ -93,6 +93,8 @@ void sendStringToMiddleMan( char* str );
 
 /* MiddleMan to DE2 function */
 void getSongListFromMiddleManAndPrintForDebuggingPurpose();
+char* getWordFromMiddleMan();
+unsigned char getByteFromMiddleMan();
 
 /* Song Functions */
 int playSong( short int file_handle );
@@ -393,6 +395,9 @@ void initialization()
 	alt_irq_disable(AUDIO_0_IRQ);
 }
 
+/* Sends the song list to the middle man words by words
+ * songList cannot be NULL
+ */
 void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 {
 	int i;
@@ -410,6 +415,9 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 	free( temp );
 }
 
+/* Sends the detail of one song to the middle man
+ * song cannot be NULL
+ */
 void sendOneSongDetailToMiddleMan( SongDetail* song )
 {
 	sendStringToMiddleMan( song->id );
@@ -418,6 +426,9 @@ void sendOneSongDetailToMiddleMan( SongDetail* song )
 	sendStringToMiddleMan( song->rating );
 }
 
+/* Sends one string to the middle man
+ * str cannot be NULL
+ */
 void sendStringToMiddleMan( char* str )
 {
 	int i;
@@ -428,38 +439,65 @@ void sendStringToMiddleMan( char* str )
 		alt_up_rs232_write_data( uart, str[i] );
 }
 
+/* Reads a string from the middle man; the first byte needs to be the length of the string
+ * This means the string cannot be longer than 255 letters
+ * returns the pointer to the string
+ */
+char* getWordFromMiddleMan()
+{
+	int length = getByteFromMiddleMan();
+	char* str = (char*)malloc( length );
 
-// implement an API for get data from middleman
+	if ( !str )
+	{
+		printf( "Error: no memory to malloc in getWordFromMiddleMan().\n" );
+		return NULL;
+	}
 
+	int i;
+	for ( i = 0; i < length; i++ )
+	{
+		str[i] = getByteFromMiddleMan();
+	}
+	str[i] = '\0';
 
+	return str;
+}
+
+/* Reads one byte from the middle man
+ * returns the byte
+ */
+unsigned char getByteFromMiddleMan()
+{
+	unsigned char data;
+	unsigned char parity;
+
+	while ( alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0 );
+	alt_up_rs232_read_data( uart, &data, &parity );
+
+	return data;
+}
+
+/* Reads the song list from the middle man and prints the song list in one line.
+ * This function is used to check whether sending of song list work or not.
+ * The algorithm of this function can also be used by Daniel to implement
+ * 		reading from middle man in Android using Java.
+ */
 void getSongListFromMiddleManAndPrintForDebuggingPurpose()
 {
 	unsigned char data;
 	unsigned char parity;
 	int i, j, k, m = 0;
-	char* numSong = malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
+	char* numSong;
 
 	printf("Waiting for data to come back from the Middleman\n");
 
-	while ( alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0 );
-	alt_up_rs232_read_data( uart, &data, &parity );
-
-	j = (int)data;
-	//printf( "j is: %d\n", j );
-	for ( i = 0; i < j; i++ )
-	{
-		while ( alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0 );
-		alt_up_rs232_read_data( uart, &data, &parity );
-		numSong[i] = data;
-		//printf( "numSong[%d]is: %c\n", i, numSong[i] );
-	}
-	numSong[i] = '\0';
+	numSong = getWordFromMiddleMan();
 
 	int num_to_receive = atoi( numSong );
 	char* temp = (char*)malloc( num_to_receive * (ID_LENGTH + NAME_LENGTH + ARTIST_LENGTH + RATING_LENGTH) );
 
 	printf("About to receive %d song details:\n", num_to_receive);
-
 
 	for ( i = 0; i < num_to_receive; i++ )
 	{
