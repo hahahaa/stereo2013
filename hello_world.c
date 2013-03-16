@@ -113,13 +113,14 @@ int streamSong( short int file_handle );
 
 /* Update */
 void updateStateFromKeys();
+void updateStateFromUART();
 void updateState();
 void updateVolume();
 
 int main()
 {
 	initialization();
-	char key;
+
 	short int file_handle;
 	currSong = 0;
 	shuffle_flag = 0;
@@ -135,7 +136,7 @@ int main()
 
 	int numSongs;
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
-	sendSongListToMiddleMan( songDetailList, numSongs );
+	//sendSongListToMiddleMan( songDetailList, numSongs );
 	//getSongListFromMiddleManAndPrintForDebuggingPurpose();
 
 	int cc;
@@ -152,26 +153,7 @@ int main()
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
 			alt_up_character_lcd_string(char_lcd_dev, songDetailList[currSong]->name);
 
-			// read keys
-			key = 0;
-			while(key == 0)
-			{
-				// wait for command
-				key = IORD_8DIRECT(keys, 0);
-				updateVolume();
-			}
-			while(IORD_8DIRECT(keys, 0) != 0);
-
-			if(key == 0x8)	//play
-				state = PLAYING_NORMAL;
-			else if(key == 0x4)	//stop
-				state = STOP;
-			else if(key == 0x2)	//next
-			{
-				nextSong();
-				alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
-				alt_up_character_lcd_string(char_lcd_dev, songDetailList[currSong]->name);
-			}
+			updateState();
 		}
 		else if(state == PLAYING_NORMAL)
 		{
@@ -211,6 +193,10 @@ int main()
 	return 0;
 }
 
+/*
+ * read keys to update the current state
+ * used while playing
+ */
 void updateStateFromKeys()
 {
 	char key = IORD_8DIRECT(keys, 0);
@@ -240,23 +226,93 @@ void updateStateFromKeys()
 	else if(key == 0x2)	//next
 	{
 		state = NEXT_PLAY;
+		//sendStringToMiddleMan("T");
 	}
 }
 
 /*
- * read keys and update the current state
+ * read uart to update the current state
  * used while playing
+ * precondition: there is data in the middleman
+ */
+void updateStateFromUART()
+{
+	char* temp = getWordFromMiddleMan();
+
+	if( strcmp(temp, "P") == 0 )	//play or paused
+	{
+		if(state == PLAYING_NORMAL)
+		{
+			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
+			alt_up_character_lcd_string(char_lcd_dev, "PAUSED ");
+			alt_irq_disable(AUDIO_0_IRQ);
+			state = PAUSED;
+		}
+		else if(state == PAUSED)
+		{
+			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
+			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
+			alt_irq_enable(AUDIO_0_IRQ);
+			state = PLAYING_NORMAL;
+		}
+	}
+	else if( strcmp(temp, "S") == 0 )	//stop
+	{
+		state = STOP;
+	}
+	else if( strcmp(temp, "N") == 0 )	//next
+	{
+		state = NEXT_PLAY;
+	}
+}
+
+/*
+ * read keys and uart to update the current state
  */
 void updateState()
 {
-	updateVolume();
-	updateStateFromKeys();
-	char* temp;
+	char* temp = "S";
+	char key;
 
-	if ( isThereSomething() )
+	if( state == STOP)
 	{
-		printf ( "there is something\n" );
-		temp = getWordFromMiddleMan();
+		key = 0;
+		while(key == 0)
+		{
+			// wait for command
+			key = IORD_8DIRECT(keys, 0);
+			updateVolume();
+
+			if ( isThereSomething() )
+			{
+				printf ( "start there is a duck\n" );
+				temp = getWordFromMiddleMan();
+				break;
+			}
+		}
+		while(IORD_8DIRECT(keys, 0) != 0);
+
+		if(key == 0x8 || strcmp(temp, "P") == 0)	//play
+			state = PLAYING_NORMAL;
+		else if(key == 0x4)	//stop
+		{
+			// current state is STOP
+			// do nothing~
+		}
+		else if(key == 0x2 || strcmp(temp, "N") == 0)
+		{
+			nextSong();
+		}
+	}
+	else
+	{
+		updateVolume();
+		updateStateFromKeys();
+		if ( isThereSomething() )
+		{
+			printf ( "there is something\n" );
+			updateStateFromUART();
+		}
 	}
 }
 
