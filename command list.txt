@@ -1,0 +1,6 @@
+ButtonPanel
+"P" Play/Pause
+"S" Stop
+"N" Next
+"L" Prev
+"T3" Playing song id 3
