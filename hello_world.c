@@ -521,7 +521,8 @@ void stopSong( short int file_handle )
 	closeFileInSD(file_handle);
 }
 
-/* Given the id of the song, finds the song from the song detail list
+/* Use this function to update currSong when user clicks a song from android device
+ * Given the id of the song, finds the song from the song detail list
  * Returns the index of the song in the list if successful, otherwise -1.
  */
 int findSong( SongDetail** list, int numSongs, char* id )
