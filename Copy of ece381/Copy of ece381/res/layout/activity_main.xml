@@ -29,20 +29,44 @@
             android:id="@+id/button3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Button" />
+            android:text="VolumeUp"
+            android:layout_weight="0.5"
+            android:onClick="upVolume" />
 
         <Button
             android:id="@+id/button4"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Button" />
+            android:text="VolumeDown"
+            android:layout_weight="0.5"
+            android:onClick="downVolume" />
 
-        <SeekBar
-            android:id="@+id/seekBar2"
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:keepScreenOn="true" />
+            android:layout_height="wrap_content" >
+
+            <Button
+                android:id="@+id/button6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Next"
+                android:onClick="nextSong" />
+
+            <Button
+                android:id="@+id/button7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Prev"
+                android:onClick="prevSong" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -62,7 +86,7 @@
             android:layout_height="wrap_content"
             android:background="#222"
             android:ems="10"
-            android:text="Song List"
+            android:text="Volume = 4"
             android:textColor="#FFF"
             android:textSize="30dp" />
         
@@ -79,16 +103,6 @@
             android:textSize="30dp" >
 
         </TextView>
-
-        
-        <TextView
-        android:id="@+id/viewText3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10" 
-        android:text="Song List3"
-        android:textSize="30dp">
-		 </TextView>
 
         <Button
             android:id="@+id/button5"

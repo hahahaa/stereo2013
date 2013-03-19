@@ -122,7 +122,7 @@ int main()
 	currSong = 0;
 	shuffle_flag = 0;
 	volume = 0;
-/*
+
 	char* message;
 	while ( !isThereSomething() )
 	{
@@ -132,7 +132,7 @@ int main()
 			break;
 	}
 	free(message);
-*/
+
 	/*
 	 * 0 stop
 	 * 1 paused
@@ -148,7 +148,7 @@ int main()
 	//getSongListFromMiddleManAndPrintForDebuggingPurpose();
 
 	int cc;
-	for(cc = 0; cc < MAX_NUMBER_SONGS; cc++)
+	for(cc = 0; cc < numSongs; cc++)
 		printf("%s\n", songDetailList[cc]->id );
 
 	while(1)
@@ -181,11 +181,11 @@ int main()
 				// skip the header
 				for(cc = 0; cc < WAV_HEADER_SIZE; cc++)
 					alt_up_sd_card_read( file_handle );
-				printf("file opened\n");
+				printf("file %s opened\n", temp);
 			}
 			else
 			{
-				printf("failed to open wav\n");
+				printf("failed to open %s wav\n", temp );
 				exit(1);
 			}
 
@@ -261,6 +261,7 @@ void updateStateFromKeys()
 void updateStateFromUART()
 {
 	char* temp = getWordFromMiddleMan();
+	printf( "Message got from Middleman: %s.\n", temp );
 
 	if( strcmp(temp, "P") == 0 )	//play or paused
 	{
@@ -635,6 +636,7 @@ void initialization()
 /* Sends the song list to the middle man words by words
  * songList cannot be NULL
  */
+/*
 void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 {
 	int i;
@@ -652,8 +654,9 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 
 	free( temp );
 }
+*/
 
-/*
+
 void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 {
 	int i;
@@ -669,31 +672,30 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 	while ( !isThereSomething() )
 	{
 		temp1 = getWordFromMiddleMan();
+		printf( "Message got from Middleman: %s.\n", temp1 );
 		if ( strcmp( temp1, "A" ) == 0 )
-		{
 			break;
-		}
 	}
 
 	for ( i = 0; i < numSong; i++ )
 	{
 		sendOneSongDetailToMiddleMan( songList[i] );
+		sendStringToMiddleMan( "'" );
 
 		while ( !isThereSomething() )
 		{
 			temp1 = getWordFromMiddleMan();
+			printf( "Message got from Middleman: %s.\n", temp1 );
 			if ( strcmp( temp1, "A" ) == 0 )
-			{
-				free(temp1);
 				break;
-			}
-			free(temp1);
 		}
 	}
-	sendStringToMiddleMan( "Done" );
+	sendStringToMiddleMan( "," );
+	printf( "Done sending message to Middleman.\n" );
 	free( temp );
+	free( temp1 );
 }
-*/
+
 
 /* Sends the detail of one song to the middle man
  * song cannot be NULL
