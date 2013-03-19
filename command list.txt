@@ -3,4 +3,6 @@ ButtonPanel
 "S" Stop
 "N" Next
 "L" Prev
+"U" Raise the volume
+"D" Lower the volume
 "T3" Playing song id 3
