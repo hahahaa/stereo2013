@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+ xmlns:android="http://schemas.android.com/apk/res/android"
+ android:layout_height="match_parent" 
+ android:layout_width="fill_parent" 
+ android:orientation="vertical">
+ 
+ 	<TextView android:text="TextView" 
+ 		android:id="@+id/textView1" 
+	        android:textColor="#222"
+	        android:textSize="20sp"
+	        android:textStyle="bold"
+	        android:layout_gravity="center_vertical" 
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content">
+ 	</TextView>
+ 
+ 	<LinearLayout android:layout_height="wrap_content" 
+ 		android:layout_width="wrap_content" 
+ 		android:id="@+id/linearLayout1" 
+ 		android:orientation="horizontal">
+ 
+ 	<TextView android:id="@+id/textView2" 
+	        android:textSize="16sp"
+      	        android:textColor="#222"
+	        android:layout_gravity="center_vertical" 
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content">
+ 	</TextView>
+ 
+ 	<TextView 
+ 	    android:text="TextView" android:id="@+id/textView3" 
+	        android:textSize="16sp"
+      	        android:textColor="#222"
+	        android:layout_gravity="center_vertical" 
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content">
+ 	</TextView>
+ </LinearLayout>
+</LinearLayout>
+
+
+
+
+
+
+<!-- <?xml version="1.0" encoding="utf-8"?> -->
+<!-- <LinearLayout -->
+<!--  xmlns:android="http://schemas.android.com/apk/res/android" -->
+<!--  android:layout_height="match_parent"  -->
+<!--  android:layout_width="fill_parent"  -->
+<!--  android:orientation="vertical"> -->
+ 
+<!--  	<TextView android:text="TextView"  -->
+<!--  		android:id="@+id/textView1"  -->
+<!--  		android:layout_width="wrap_content"  -->
+<!--  		android:layout_height="wrap_content"  -->
+<!--  		android:layout_marginLeft="6dip" -->
+<!--  		android:layout_marginTop="6dip"  -->
+<!--  		android:textAppearance="?android:attr/textAppearanceLarge"> -->
+<!--  	</TextView> -->
+ 
+<!--  	<LinearLayout android:layout_height="wrap_content"  -->
+<!--  		android:layout_width="wrap_content"  -->
+<!--  		android:id="@+id/linearLayout1"  -->
+<!--  		android:orientation="horizontal"> -->
+ 
+<!--  	<TextView android:id="@+id/textView2"  -->
+<!-- 		android:text="TextView"  -->
+<!--  		android:layout_height="wrap_content"  -->
+<!--  		android:layout_width="wrap_content"  -->
+<!--  		android:color="#000" -->
+<!-- 		 android:textAppearance="?android:attr/textAppearanceSmall"> -->
+<!--  	</TextView> -->
+ 
+<!--  	<TextView  -->
+<!--  	    android:text="TextView" android:id="@+id/textView3"  -->
+<!--  		android:layout_width="wrap_content"  -->
+<!--  		android:layout_height="wrap_content"  -->
+<!--  		android:color="#000" -->
+<!--  		android:textAppearance="?android:attr/textAppearanceSmall"  -->
+<!--  		android:layout_marginLeft="6dip"> -->
+<!--  	</TextView> -->
+<!--  </LinearLayout> -->
+<!-- </LinearLayout> -->
+
+
+
+
+

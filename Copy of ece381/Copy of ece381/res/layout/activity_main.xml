@@ -1,0 +1,114 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="75dp"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="wrap_content"
+            android:layout_height="75dp"
+            android:height="75dp"
+            android:width="100dp"
+            android:text="Play"
+            android:onClick="playSong" />
+
+        <Button
+            android:id="@+id/button1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pause"
+            android:onClick="pauseSong" />
+
+        <Button
+            android:id="@+id/button3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Button" />
+
+        <Button
+            android:id="@+id/button4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Button" />
+
+        <SeekBar
+            android:id="@+id/seekBar2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:keepScreenOn="true" />
+
+    </LinearLayout>
+
+    <SeekBar
+        android:id="@+id/seekBar1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/viewText1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#222"
+            android:ems="10"
+            android:text="Song List"
+            android:textColor="#FFF"
+            android:textSize="30dp" />
+        
+        <TextView
+            android:id="@+id/viewText2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:ems="10"
+            android:linksClickable="true"
+            android:longClickable="true"
+            android:onClick="sendMessage"
+            android:text="@string/song1"
+            android:textSize="30dp" >
+
+        </TextView>
+
+        
+        <TextView
+        android:id="@+id/viewText3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10" 
+        android:text="Song List3"
+        android:textSize="30dp">
+		 </TextView>
+
+        <Button
+            android:id="@+id/button5"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Button"
+            android:onClick="sendMessage"/>
+        
+        <ListView 
+        android:layout_width="match_parent" 
+        android:layout_height="match_parent"
+        android:id="@+id/listView"
+
+        />   
+		 
+    </LinearLayout>
+
+</LinearLayout>
+
+
+
+<!--         android:onClick="sendMessage" -->

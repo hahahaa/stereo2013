@@ -127,6 +127,14 @@ int main()
 	shuffle_flag = 0;
 	volume = 0;
 
+	char* message;
+	while ( !isThereSomething() )
+	{
+		message = getWordFromMiddleMan();
+		printf( "%s.\n", message );
+		break;
+	}
+
 	/*
 	 * 0 stop
 	 * 1 paused
@@ -137,8 +145,7 @@ int main()
 
 	int numSongs;
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
-	//sendSongListToMiddleMan( songDetailList, numSongs );
-	//getSongListFromMiddleManAndPrintForDebuggingPurpose();
+	sendSongListToMiddleMan( songDetailList, numSongs );
 
 	int cc;
 	for(cc = 0; cc < numSongs; cc++)
@@ -228,8 +235,8 @@ void updateStateFromKeys()
 	}
 	else if(key == 0x2)	//next
 	{
-		state = NEXT_PLAY;
-		//sendStringToMiddleMan("T");
+		//state = NEXT_PLAY;
+		sendStringToMiddleMan("T");
 	}
 }
 
@@ -580,7 +587,6 @@ void initialization()
 
 	/* UART RS232 */
 	uart = alt_up_rs232_open_dev("/dev/rs232_0");
-
 	clearMiddleManBuffer();
 
 	/* Interrupt */
@@ -600,6 +606,7 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 
 	printf("Sending the message to the Middleman\n");
 	sendStringToMiddleMan( temp );
+	sendStringToMiddleMan( "." );
 
 	for ( i = 0; i < numSong; i++ )
 	{
@@ -615,9 +622,13 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 void sendOneSongDetailToMiddleMan( SongDetail* song )
 {
 	sendStringToMiddleMan( song->id );
+	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->name );
+	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->artist );
+	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->rating );
+	sendStringToMiddleMan( "." );
 }
 
 /* Sends one string to the middle man
@@ -627,7 +638,7 @@ void sendStringToMiddleMan( char* str )
 {
 	int i;
 
-	alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
+	//alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
 
 	for ( i = 0; i < strlen(str); i++ )
 		alt_up_rs232_write_data( uart, str[i] );
@@ -688,7 +699,8 @@ void clearMiddleManBuffer()
 	}
 }
 
-/* Reads the song list from the middle man and prints the song list in one line.
+/* This function is deprecated as of March 18th.
+ * Reads the song list from the middle man and prints the song list in one line.
  * This function is used to check whether sending of song list work or not.
  * The algorithm of this function can also be used by Daniel to implement
  * 		reading from middle man in Android using Java.
