@@ -26,7 +26,6 @@
 #define PREV_PLAY 4
 
 /* Constants for high level song stuff */
-#define MAX_NUMBER_SONGS 8
 #define MAX_NUM_SONGS 100
 #define MAX_DIGIT_OF_MAX_NUM_SONG 4 // has to include memory for null character
 #define EXTENSION_LENGTH 4
@@ -41,6 +40,7 @@
 #define WAV_HEADER_SIZE 44
 #define SAMPLE_SIZE 96
 
+int numSongs;
 int song_index;	// 0 <= song_count < SONG_SIZE
 unsigned int song_wav[2];
 unsigned int song_sample[96];
@@ -105,7 +105,7 @@ void stopSong( short int file_handle );
 void nextSong( int next );
 void audio_isr( void * context, unsigned int irq_id );
 int streamSong( short int file_handle );
-int findSong( SongDetail** list, int numSongs, char* id );
+int findSong( SongDetail** list, int numSong, char* id );
 
 /* Update */
 void updateStateFromKeys();
@@ -142,7 +142,7 @@ int main()
 	*/
 	state = STOP;
 
-	int numSongs;
+	numSongs = 0;
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
 	sendSongListToMiddleMan( songDetailList, numSongs );
 	//getSongListFromMiddleManAndPrintForDebuggingPurpose();
@@ -582,13 +582,13 @@ void nextSong( int next )
 	if( (sw & 0x80) != 0x80)	// repeat the same song when SW7 == 1
 	{
 		if(next == 1)
-			currSong = (currSong + 1) % MAX_NUMBER_SONGS;
+			currSong = (currSong + 1) % numSongs;
 		else
 		{
 			if(currSong == 0)
-				currSong = MAX_NUMBER_SONGS - 1;
+				currSong = numSongs - 1;
 			else
-				currSong = (currSong - 1) % MAX_NUMBER_SONGS;
+				currSong = (currSong - 1) % numSongs;
 		}
 	}
 }
@@ -637,17 +637,17 @@ void initialization()
  * songList cannot be NULL
  */
 /*
-void sendSongListToMiddleMan( SongDetail** songList, int numSong )
+void sendSongListToMiddleMan( SongDetail** songList, int numSongs )
 {
 	int i;
 	char* temp = malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
-	sprintf( temp, "%d", numSong );
+	sprintf( temp, "%d", numSongs );
 
 	printf("Sending the message to the Middleman\n");
 	sendStringToMiddleMan( temp );
 	sendStringToMiddleMan( "." );
 
-	for ( i = 0; i < numSong; i++ )
+	for ( i = 0; i < numSongs; i++ )
 	{
 		sendOneSongDetailToMiddleMan( songList[i] );
 	}
@@ -785,14 +785,14 @@ void clearMiddleManBuffer()
  * Given the id of the song, finds the song from the song detail list
  * Returns the index of the song in the list if successful, otherwise -1.
  */
-int findSong( SongDetail** list, int numSongs, char* id )
+int findSong( SongDetail** list, int numSong, char* id )
 {
 	int i;
 
 	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -803,7 +803,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -814,7 +814,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -826,7 +826,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -835,7 +835,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -844,7 +844,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -853,7 +853,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -862,7 +862,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -871,7 +871,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -880,7 +880,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -889,7 +889,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -898,7 +898,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -907,7 +907,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -916,7 +916,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -925,7 +925,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -934,7 +934,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -943,7 +943,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -952,7 +952,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -961,7 +961,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -970,7 +970,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -979,7 +979,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -988,7 +988,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -997,7 +997,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -1006,7 +1006,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -1015,7 +1015,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -1024,7 +1024,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -1033,7 +1033,7 @@ int findSong( SongDetail** list, int numSongs, char* id )
 	return -1;	if ( !list || !id )
 		return -1;
 
-	for ( i = 0; i < numSongs; i++ )
+	for ( i = 0; i < numSong; i++ )
 	{
 		if ( strcmp( list[i]->id, id ) == 0 )
 			return i;
@@ -1114,14 +1114,14 @@ char closeFileInSD( short int file_handle )
 /* Reads all the song details in the song list
  * returns an array of songDetail struct if successful, NULL otherwise
  */
-SongDetail** getListOfSongDetails( int *numSongs )
+SongDetail** getListOfSongDetails( int *numSong )
 {
 	SongDetail** songList;
 	short int file_handle;
 	int i;
-	char* numSongsStr = (char*)malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
+	char* numSongStr = (char*)malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
 
-	if ( !numSongsStr )
+	if ( !numSongStr )
 	{
 		printf( "Error: no memory to allocate memory for numSongs.\n" );
 		return NULL;
@@ -1129,12 +1129,12 @@ SongDetail** getListOfSongDetails( int *numSongs )
 
 	openFileInSD( "SONGLIST.TXT", &file_handle );
 
-	if ( readWordFromSD( numSongsStr, MAX_NUM_SONGS, file_handle ) == -1 )
+	if ( readWordFromSD( numSongStr, MAX_NUM_SONGS, file_handle ) == -1 )
 		return NULL;
 
-	*numSongs = atoi( numSongsStr );
+	*numSong = atoi( numSongStr );
 
-	songList = malloc( *numSongs * sizeof(SongDetail) );
+	songList = malloc( *numSong * sizeof(SongDetail) );
 
 	if ( !songList )
 	{
@@ -1143,7 +1143,7 @@ SongDetail** getListOfSongDetails( int *numSongs )
 		return NULL;
 	}
 
-	for ( i = 0; i < *numSongs; i++ )
+	for ( i = 0; i < *numSong; i++ )
 	{
 		songList[i] = readDetailForOneSong( file_handle );
 		if ( !songList[i] )
@@ -1265,3 +1265,4 @@ char readACharFromSD( short int file_handle )
 
 	return byte;
 }
+
