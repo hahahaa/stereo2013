@@ -122,15 +122,17 @@ int main()
 	currSong = 0;
 	shuffle_flag = 0;
 	volume = 0;
-
+/*
 	char* message;
 	while ( !isThereSomething() )
 	{
 		message = getWordFromMiddleMan();
 		printf( "%s.\n", message );
-		break;
+		if( strcmp(message, "playlist") == 0)
+			break;
 	}
-
+	free(message);
+*/
 	/*
 	 * 0 stop
 	 * 1 paused
@@ -153,6 +155,7 @@ int main()
 	{
 		if(state == STOP)
 		{
+			//sendStringToMiddleMan( "S" );
 			alt_up_character_lcd_init(char_lcd_dev);
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "STOP   ");
@@ -163,6 +166,7 @@ int main()
 		}
 		else if(state == PLAYING_NORMAL)
 		{
+			//sendStringToMiddleMan( "P" );
 			alt_up_character_lcd_init(char_lcd_dev);
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
@@ -192,11 +196,13 @@ int main()
 			{
 				nextSong(1);
 				state = PLAYING_NORMAL;
+				//sendStringToMiddleMan( "N" );
 			}
 			else if(state == PREV_PLAY)
 			{
 				nextSong(0);
 				state = PLAYING_NORMAL;
+				//sendStringToMiddleMan( "L" );
 			}
 		}
 	}
@@ -217,6 +223,7 @@ void updateStateFromKeys()
 	{
 		if(state == PLAYING_NORMAL)
 		{
+			//sendStringToMiddleMan( "P" );
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PAUSED ");
 			alt_irq_disable(AUDIO_0_IRQ);
@@ -224,6 +231,7 @@ void updateStateFromKeys()
 		}
 		else if(state == PAUSED)
 		{
+			//sendStringToMiddleMan( "P" );
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
 			alt_irq_enable(AUDIO_0_IRQ);
@@ -232,12 +240,12 @@ void updateStateFromKeys()
 	}
 	else if(key == 0x4)	//stop
 	{
+		//sendStringToMiddleMan( "S" );
 		state = STOP;
 	}
 	else if(key == 0x2)	//next
 	{
 		state = NEXT_PLAY;
-		//sendStringToMiddleMan("T");
 	}
 	else if(key == 0x1)
 	{
@@ -262,26 +270,46 @@ void updateStateFromUART()
 			alt_up_character_lcd_string(char_lcd_dev, "PAUSED ");
 			alt_irq_disable(AUDIO_0_IRQ);
 			state = PAUSED;
+			sendStringToMiddleMan( "p" );
 		}
-		else if(state == PAUSED)
+		else if(state == PAUSED || state == STOP)
 		{
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
 			alt_irq_enable(AUDIO_0_IRQ);
 			state = PLAYING_NORMAL;
+			char* buf = (char*)malloc( 3 );
+			sprintf( buf, "%d", currSong );
+			sendStringToMiddleMan( buf );
+			free(buf);
 		}
 	}
 	else if( strcmp(temp, "S") == 0 )	//stop
 	{
 		state = STOP;
+		sendStringToMiddleMan( "S" );
 	}
 	else if( strcmp(temp, "N") == 0 )	//next
 	{
 		state = NEXT_PLAY;
+		sendStringToMiddleMan( "N" );
 	}
 	else if( strcmp(temp, "L") == 0)	//prev
 	{
 		state = PREV_PLAY;
+		sendStringToMiddleMan( "L" );
+	}
+	else if( strcmp(temp, "D") == 0)	//raise volume
+	{
+		sendStringToMiddleMan( "D" );
+		if(volume < 4)
+			volume++;
+	}
+	else if( strcmp(temp, "U") == 0)	//lower volume
+	{
+		sendStringToMiddleMan( "U" );
+		if(volume > 0)
+			volume--;
 	}
 	free(temp);
 }
@@ -291,7 +319,7 @@ void updateStateFromUART()
  */
 void updateState()
 {
-	char* temp = "S";
+	//char* temp = "S";
 	char key;
 
 	if( state == STOP )
@@ -306,26 +334,32 @@ void updateState()
 			if ( isThereSomething() )
 			{
 				printf ( "start there is a duck\n" );
-				temp = getWordFromMiddleMan();
+				//temp = getWordFromMiddleMan();
+				updateStateFromUART();
 				break;
 			}
 		}
 		while(IORD_8DIRECT(keys, 0) != 0);
 
-		if(key == 0x8 || strcmp(temp, "P") == 0)	//play
+		//if(key == 0x8 || strcmp(temp, "P") == 0)	//play
+		if(key == 0x8)	//play
 			state = PLAYING_NORMAL;
 		else if(key == 0x4)	//stop
 		{
 			// current state is STOP
 			// do nothing~
 		}
-		else if(key == 0x2 || strcmp(temp, "N") == 0)
+		//else if(key == 0x2 || strcmp(temp, "N") == 0)
+		else if(key == 0x2 )
 		{
 			nextSong(1);
+			//sendStringToMiddleMan( "N" );
 		}
-		else if(key == 0x1 || strcmp(temp, "L") == 0)
+		//else if(key == 0x1 || strcmp(temp, "L") == 0)
+		else if(key == 0x1 )
 		{
 			nextSong(0);
+			//sendStringToMiddleMan( "L" );
 		}
 	}
 	else
@@ -345,8 +379,8 @@ void updateState()
  */
 void updateVolume()
 {
-	char sw = IORD_8DIRECT(switches, 0);
-	volume = sw & 0x03;
+	//char sw = IORD_8DIRECT(switches, 0);
+	//volume = sw & 0x03;
 }
 
 /*
@@ -372,6 +406,11 @@ int playSong( short int file_handle )
 
 	prev_stream_flag = stream_flag;
 	isLastSecond = 0;
+
+	char* buf = (char*)malloc( 3 );
+	sprintf( buf, "%d", currSong );
+	sendStringToMiddleMan( buf );
+	free(buf);
 
 	alt_irq_enable(AUDIO_0_IRQ);
 
@@ -433,7 +472,9 @@ void audio_isr (void * context, unsigned int irq_id)
 		song_sample[cc] = ((song_wav[1]<<8)|song_wav[0])<<8;
 
 		// lower the volume
-		if(volume != 0)
+		if(volume == 4)
+			song_sample[cc] = 0;
+		else if(volume != 0)
 		{
 			if(song_sample[cc] >= 0x800000)
 				song_sample[cc] = (song_sample[cc]>>volume)|0xE00000;
@@ -612,6 +653,47 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 	free( temp );
 }
 
+/*
+void sendSongListToMiddleMan( SongDetail** songList, int numSong )
+{
+	int i;
+	char* temp = malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
+	sprintf( temp, "%d", numSong );
+	char* temp1 = malloc( 5 );	// need to make a constant
+
+	printf("numSong: %d\n", numSong);
+	printf("Sending the message to the Middleman\n");
+	sendStringToMiddleMan( temp );
+	sendStringToMiddleMan( "." );
+
+	while ( !isThereSomething() )
+	{
+		temp1 = getWordFromMiddleMan();
+		if ( strcmp( temp1, "A" ) == 0 )
+		{
+			break;
+		}
+	}
+
+	for ( i = 0; i < numSong; i++ )
+	{
+		sendOneSongDetailToMiddleMan( songList[i] );
+
+		while ( !isThereSomething() )
+		{
+			temp1 = getWordFromMiddleMan();
+			if ( strcmp( temp1, "A" ) == 0 )
+			{
+				free(temp1);
+				break;
+			}
+			free(temp1);
+		}
+	}
+	sendStringToMiddleMan( "Done" );
+	free( temp );
+}
+*/
 
 /* Sends the detail of one song to the middle man
  * song cannot be NULL
@@ -625,7 +707,8 @@ void sendOneSongDetailToMiddleMan( SongDetail* song )
 	sendStringToMiddleMan( song->artist );
 	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->rating );
-	sendStringToMiddleMan( "." );
+	sendStringToMiddleMan( ".");
+
 }
 
 /* Sends one string to the middle man
