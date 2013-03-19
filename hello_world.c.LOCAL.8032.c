@@ -113,7 +113,6 @@ void updateStateFromUART();
 void updateState();
 void updateVolume();
 
-
 int main()
 {
 	initialization();
@@ -122,14 +121,6 @@ int main()
 	currSong = 0;
 	shuffle_flag = 0;
 	volume = 0;
-
-	char* message;
-	while ( !isThereSomething() )
-	{
-		message = getWordFromMiddleMan();
-		printf( "%s.\n", message );
-		break;
-	}
 
 	/*
 	 * 0 stop
@@ -142,7 +133,7 @@ int main()
 
 	int numSongs;
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
-	sendSongListToMiddleMan( songDetailList, numSongs );
+	//sendSongListToMiddleMan( songDetailList, numSongs );
 	//getSongListFromMiddleManAndPrintForDebuggingPurpose();
 
 	int cc;
@@ -153,6 +144,7 @@ int main()
 	{
 		if(state == STOP)
 		{
+			sendStringToMiddleMan("S");
 			alt_up_character_lcd_init(char_lcd_dev);
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "STOP   ");
@@ -163,6 +155,7 @@ int main()
 		}
 		else if(state == PLAYING_NORMAL)
 		{
+			sendStringToMiddleMan("P");
 			alt_up_character_lcd_init(char_lcd_dev);
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
@@ -217,6 +210,7 @@ void updateStateFromKeys()
 	{
 		if(state == PLAYING_NORMAL)
 		{
+			sendStringToMiddleMan("P");
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PAUSED ");
 			alt_irq_disable(AUDIO_0_IRQ);
@@ -224,6 +218,7 @@ void updateStateFromKeys()
 		}
 		else if(state == PAUSED)
 		{
+			sendStringToMiddleMan("P");
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
 			alt_irq_enable(AUDIO_0_IRQ);
@@ -232,15 +227,17 @@ void updateStateFromKeys()
 	}
 	else if(key == 0x4)	//stop
 	{
+		sendStringToMiddleMan("S");
 		state = STOP;
 	}
 	else if(key == 0x2)	//next
 	{
+		sendStringToMiddleMan("N");
 		state = NEXT_PLAY;
-		//sendStringToMiddleMan("T");
 	}
 	else if(key == 0x1)
 	{
+		sendStringToMiddleMan("L");
 		state = PREV_PLAY;
 	}
 }
@@ -338,6 +335,7 @@ void updateState()
 			updateStateFromUART();
 		}
 	}
+	free(temp);
 }
 
 /*
@@ -540,13 +538,17 @@ void nextSong( int next )
 	if( (sw & 0x80) != 0x80)	// repeat the same song when SW7 == 1
 	{
 		if(next == 1)
+		{
 			currSong = (currSong + 1) % MAX_NUMBER_SONGS;
+			sendStringToMiddleMan("N");
+		}
 		else
 		{
 			if(currSong == 0)
 				currSong = MAX_NUMBER_SONGS - 1;
 			else
 				currSong = (currSong - 1) % MAX_NUMBER_SONGS;
+			sendStringToMiddleMan("L");
 		}
 	}
 }
@@ -602,7 +604,6 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 
 	printf("Sending the message to the Middleman\n");
 	sendStringToMiddleMan( temp );
-	sendStringToMiddleMan( "." );
 
 	for ( i = 0; i < numSong; i++ )
 	{
@@ -612,20 +613,15 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 	free( temp );
 }
 
-
 /* Sends the detail of one song to the middle man
  * song cannot be NULL
  */
 void sendOneSongDetailToMiddleMan( SongDetail* song )
 {
 	sendStringToMiddleMan( song->id );
-	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->name );
-	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->artist );
-	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->rating );
-	sendStringToMiddleMan( "." );
 }
 
 /* Sends one string to the middle man
@@ -635,7 +631,7 @@ void sendStringToMiddleMan( char* str )
 {
 	int i;
 
-	//alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
+	alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
 
 	for ( i = 0; i < strlen(str); i++ )
 		alt_up_rs232_write_data( uart, str[i] );

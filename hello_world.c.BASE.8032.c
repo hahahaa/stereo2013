@@ -23,27 +23,32 @@
 #define PAUSED 1
 #define PLAYING_NORMAL 2
 #define NEXT_PLAY 3
-#define PREV_PLAY 4
 
 /* Constants for high level song stuff */
-#define MAX_NUMBER_SONGS 8
-#define MAX_NUM_SONGS 100
-#define MAX_DIGIT_OF_MAX_NUM_SONG 4 // has to include memory for null character
-#define EXTENSION_LENGTH 4
+const int MAX_NUMBER_SONGS = 2;
+const int MAX_STRING_SIZE = 7;
+const int MAX_NUM_SONGS = 100;
+const int MAX_DIGIT_OF_MAX_NUM_SONG = 4; // has to include memory for null character
+const int EXTENSION_LENGTH = 4;
 
 /* Constants for SongDetail; the length includes the null character */
-#define ID_LENGTH 5// id length includes the carriage return character in addition
-#define NAME_LENGTH 26
-#define ARTIST_LENGTH 21
-#define RATING_LENGTH 3
+const int ID_LENGTH = 5;	// id length includes the carriage return character in addition
+const int NAME_LENGTH = 26;
+const int ARTIST_LENGTH = 21;
+const int RATING_LENGTH = 3;
 
-#define SONG_SIZE 65534	//around 1 second long
-#define WAV_HEADER_SIZE 44
-#define SAMPLE_SIZE 96
-
+//const int SONG_SIZE = 2000;
+//const int SONG_SIZE = 32766;	//around 0.5 second long
+const int SONG_SIZE = 65534;	//around 1 second long
+//const int SONG_SIZE = 131068;	//around 2 second long
+//const int SONG_SIZE = 196602;	//around 3 seconds long
+const int WAV_HEADER_SIZE = 44;
+const int SAMPLE_SIZE = 96;
 int song_index;	// 0 <= song_count < SONG_SIZE
 unsigned int song_wav[2];
 unsigned int song_sample[96];
+//unsigned int* streamA;
+//unsigned int* streamB;
 unsigned int streamA[65534];
 unsigned int streamB[65534];
 int streamA_size;
@@ -53,7 +58,7 @@ int state;
 int currSong;
 int shuffle_flag;
 int volume;
-int aa;	// debug thing
+int aa;
 
 typedef struct {
 	char* id;
@@ -93,7 +98,7 @@ void sendOneSongDetailToMiddleMan( SongDetail* song );
 void sendStringToMiddleMan( char* str );
 
 /* MiddleMan to DE2 function */
-//void getSongListFromMiddleManAndPrintForDebuggingPurpose();
+void getSongListFromMiddleManAndPrintForDebuggingPurpose();
 char* getWordFromMiddleMan();
 unsigned char getByteFromMiddleMan();
 int isThereSomething();
@@ -102,8 +107,8 @@ void clearMiddleManBuffer();
 /* Song Functions */
 int playSong( short int file_handle );
 void stopSong( short int file_handle );
-void nextSong( int next );
-void audio_isr( void * context, unsigned int irq_id );
+void nextSong();
+void audio_isr (void * context, unsigned int irq_id);
 int streamSong( short int file_handle );
 int findSong( SongDetail** list, int numSongs, char* id );
 
@@ -112,7 +117,6 @@ void updateStateFromKeys();
 void updateStateFromUART();
 void updateState();
 void updateVolume();
-
 
 int main()
 {
@@ -123,31 +127,24 @@ int main()
 	shuffle_flag = 0;
 	volume = 0;
 
-	char* message;
-	while ( !isThereSomething() )
-	{
-		message = getWordFromMiddleMan();
-		printf( "%s.\n", message );
-		break;
-	}
-
 	/*
 	 * 0 stop
 	 * 1 paused
 	 * 2 playing normal
 	 * 3 next and play
-	 * 4 prev and play
 	*/
 	state = STOP;
 
 	int numSongs;
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
-	sendSongListToMiddleMan( songDetailList, numSongs );
+	//sendSongListToMiddleMan( songDetailList, numSongs );
 	//getSongListFromMiddleManAndPrintForDebuggingPurpose();
 
 	int cc;
-	for(cc = 0; cc < MAX_NUMBER_SONGS; cc++)
+	for(cc = 0; cc < numSongs; cc++)
 		printf("%s\n", songDetailList[cc]->id );
+
+	printf( "The song found is at index: %d.\n", findSong( songDetailList, numSongs, "02" ) );
 
 	while(1)
 	{
@@ -190,12 +187,7 @@ int main()
 
 			if(state == NEXT_PLAY || state == PLAYING_NORMAL)
 			{
-				nextSong(1);
-				state = PLAYING_NORMAL;
-			}
-			else if(state == PREV_PLAY)
-			{
-				nextSong(0);
+				nextSong();
 				state = PLAYING_NORMAL;
 			}
 		}
@@ -239,10 +231,6 @@ void updateStateFromKeys()
 		state = NEXT_PLAY;
 		//sendStringToMiddleMan("T");
 	}
-	else if(key == 0x1)
-	{
-		state = PREV_PLAY;
-	}
 }
 
 /*
@@ -279,11 +267,6 @@ void updateStateFromUART()
 	{
 		state = NEXT_PLAY;
 	}
-	else if( strcmp(temp, "L") == 0)	//prev
-	{
-		state = PREV_PLAY;
-	}
-	free(temp);
 }
 
 /*
@@ -294,7 +277,7 @@ void updateState()
 	char* temp = "S";
 	char key;
 
-	if( state == STOP )
+	if( state == STOP)
 	{
 		key = 0;
 		while(key == 0)
@@ -321,11 +304,7 @@ void updateState()
 		}
 		else if(key == 0x2 || strcmp(temp, "N") == 0)
 		{
-			nextSong(1);
-		}
-		else if(key == 0x1 || strcmp(temp, "L") == 0)
-		{
-			nextSong(0);
+			nextSong();
 		}
 	}
 	else
@@ -346,7 +325,7 @@ void updateState()
 void updateVolume()
 {
 	char sw = IORD_8DIRECT(switches, 0);
-	volume = sw & 0x03;
+	volume = sw;
 }
 
 /*
@@ -377,21 +356,22 @@ int playSong( short int file_handle )
 
 	while(1)
 	{
-		if(state == PLAYING_NORMAL)
+		//printf("where are u\n");
+		if(state == STOP)
+		{
+			//printf("why why why\n");
+			break;
+		}
+		else if(state == PLAYING_NORMAL)
 		{
 			isLastSecond = streamSong( file_handle );
+			//printf("isLastSecond : %d\n", isLastSecond);
 			while(stream_flag == prev_stream_flag)
-			{
-				if( state != PLAYING_NORMAL)
+				if(state == STOP || state == NEXT_PLAY)
 					stream_flag = !prev_stream_flag;
-			}
 			prev_stream_flag = stream_flag;
 		}
-		else if(state == STOP)
-		{
-			return 0;
-		}
-		else// if(state == NEXT_PLAY || state == PREV_PLAY)	//next or prev is pressed
+		else if(state == NEXT_PLAY)	//next is pressed
 		{
 			return 1;
 		}
@@ -403,8 +383,10 @@ int playSong( short int file_handle )
 			while(stream_flag == prev_stream_flag);
 			break;
 		}
+		//printf("where am i\n");
 	}
 
+	//printf("hstop\n");
 	return 0;
 }
 
@@ -432,13 +414,19 @@ void audio_isr (void * context, unsigned int irq_id)
 
 		song_sample[cc] = ((song_wav[1]<<8)|song_wav[0])<<8;
 
-		// lower the volume
-		if(volume != 0)
+		if( volume == 1)
 		{
-			if(song_sample[cc] >= 0x800000)
-				song_sample[cc] = (song_sample[cc]>>volume)|0xE00000;
+			if(song_sample[cc] >= 0x00080000)
+				song_sample[cc] = (song_sample[cc]<<(1))|0x00008000;
 			else
-				song_sample[cc] = song_sample[cc]>>volume;
+				song_sample[cc] = song_sample[cc]<<(1);
+		}
+		else if(volume == 2)
+		{
+			if(song_sample[cc] >= 0x00080000)
+				song_sample[cc] = (song_sample[cc]<<(3))|0x00008000;
+			else
+				song_sample[cc] = song_sample[cc]<<(3);
 		}
 
 		if(stream_flag == 0 && song_index == streamA_size)
@@ -476,9 +464,13 @@ int streamSong( short int file_handle )
 	int flag = stream_flag;
 
 	if(flag == 1)
+	{
 		stream = streamA;
+	}
 	else
+	{
 		stream = streamB;
+	}
 
 	for(i = 0; i < SONG_SIZE; i++)
 	{
@@ -500,12 +492,12 @@ int streamSong( short int file_handle )
 		while(state == PAUSED)
 			updateState();
 
-		//if(state == STOP || state == NEXT_PLAY || state == PREV_PLAY)
-		if(state != PLAYING_NORMAL)
+		if(state == STOP || state == NEXT_PLAY)
 		{
 			printf("stop\n");
 			break;
 		}
+
 	}
 
 	if(flag == 1)
@@ -529,26 +521,32 @@ void stopSong( short int file_handle )
 	closeFileInSD(file_handle);
 }
 
-/*
- * set the next song playing
- * if next == 1, play the next song
- * otherwise, play the previous song
+/* Use this function to update currSong when user clicks a song from android device
+ * Given the id of the song, finds the song from the song detail list
+ * Returns the index of the song in the list if successful, otherwise -1.
  */
-void nextSong( int next )
+int findSong( SongDetail** list, int numSongs, char* id )
 {
-	char sw = IORD_8DIRECT(switches, 0);
-	if( (sw & 0x80) != 0x80)	// repeat the same song when SW7 == 1
+	int i;
+
+	if ( !list || !id )
+		return -1;
+
+	for ( i = 0; i < numSongs; i++ )
 	{
-		if(next == 1)
-			currSong = (currSong + 1) % MAX_NUMBER_SONGS;
-		else
-		{
-			if(currSong == 0)
-				currSong = MAX_NUMBER_SONGS - 1;
-			else
-				currSong = (currSong - 1) % MAX_NUMBER_SONGS;
-		}
+		if ( strcmp( list[i]->id, id ) == 0 )
+			return i;
 	}
+
+	return -1;
+}
+
+/*
+ * set the next song
+ */
+void nextSong()
+{
+	currSong = (currSong + 1) % MAX_NUMBER_SONGS;
 }
 
 void initialization()
@@ -602,7 +600,6 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 
 	printf("Sending the message to the Middleman\n");
 	sendStringToMiddleMan( temp );
-	sendStringToMiddleMan( "." );
 
 	for ( i = 0; i < numSong; i++ )
 	{
@@ -612,20 +609,15 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 	free( temp );
 }
 
-
 /* Sends the detail of one song to the middle man
  * song cannot be NULL
  */
 void sendOneSongDetailToMiddleMan( SongDetail* song )
 {
 	sendStringToMiddleMan( song->id );
-	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->name );
-	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->artist );
-	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->rating );
-	sendStringToMiddleMan( "." );
 }
 
 /* Sends one string to the middle man
@@ -635,7 +627,7 @@ void sendStringToMiddleMan( char* str )
 {
 	int i;
 
-	//alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
+	alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
 
 	for ( i = 0; i < strlen(str); i++ )
 		alt_up_rs232_write_data( uart, str[i] );
@@ -696,276 +688,54 @@ void clearMiddleManBuffer()
 	}
 }
 
-/* Use this function to update currSong when user clicks a song from android device
- * Given the id of the song, finds the song from the song detail list
- * Returns the index of the song in the list if successful, otherwise -1.
+/* Reads the song list from the middle man and prints the song list in one line.
+ * This function is used to check whether sending of song list work or not.
+ * The algorithm of this function can also be used by Daniel to implement
+ * 		reading from middle man in Android using Java.
  */
-int findSong( SongDetail** list, int numSongs, char* id )
+void getSongListFromMiddleManAndPrintForDebuggingPurpose()
 {
-	int i;
+	unsigned char data;
+	unsigned char parity;
+	int i, j, k, m = 0;
+	char* numSong;
 
-	if ( !list || !id )
-		return -1;
+	printf("Waiting for data to come back from the Middleman\n");
 
-	for ( i = 0; i < numSongs; i++ )
+	numSong = getWordFromMiddleMan();
+
+	int num_to_receive = atoi( numSong );
+	char* temp = (char*)malloc( num_to_receive * (ID_LENGTH + NAME_LENGTH + ARTIST_LENGTH + RATING_LENGTH) );
+
+	printf("About to receive %d song details:\n", num_to_receive);
+
+	for ( i = 0; i < num_to_receive; i++ )
 	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
+		for ( j = 0; j < 4; j++ )
+		{
+			while ( alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0 );
+			alt_up_rs232_read_data( uart, &data, &parity );
+			int lengthOfData = (int)data;
+
+			for ( k = 0; k < lengthOfData; k++ )
+			{
+				while (alt_up_rs232_get_used_space_in_read_FIFO(uart) == 0);
+
+				alt_up_rs232_read_data( uart, &data, &parity );
+
+				temp[m++] = data;
+				//printf( "%c", data );
+			}
+			temp[m++] = ' ';
+		}
 	}
+	temp[m] = '\0';
 
-	return -1;
+	printf( "Data Received: %s\n", temp );
 
-	if ( !list || !id )
-		return -1;
+	clearMiddleManBuffer();
 
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;
-
-	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;
-
-
-	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;	if ( !list || !id )
-		return -1;
-
-	for ( i = 0; i < numSongs; i++ )
-	{
-		if ( strcmp( list[i]->id, id ) == 0 )
-			return i;
-	}
-
-	return -1;
-
-
-
-
-
-
-
-
-
-
-
+	free( temp );
 }
 
 /* Opens a file and stores the file_handle in the memory pointed by file_handle_ptr
@@ -1180,3 +950,4 @@ char readACharFromSD( short int file_handle )
 
 	return byte;
 }
+

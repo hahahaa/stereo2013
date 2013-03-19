@@ -113,7 +113,6 @@ void updateStateFromUART();
 void updateState();
 void updateVolume();
 
-
 int main()
 {
 	initialization();
@@ -143,7 +142,6 @@ int main()
 	int numSongs;
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
 	sendSongListToMiddleMan( songDetailList, numSongs );
-	//getSongListFromMiddleManAndPrintForDebuggingPurpose();
 
 	int cc;
 	for(cc = 0; cc < MAX_NUMBER_SONGS; cc++)
@@ -153,6 +151,7 @@ int main()
 	{
 		if(state == STOP)
 		{
+			sendStringToMiddleMan("S");
 			alt_up_character_lcd_init(char_lcd_dev);
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "STOP   ");
@@ -163,6 +162,7 @@ int main()
 		}
 		else if(state == PLAYING_NORMAL)
 		{
+			sendStringToMiddleMan("P");
 			alt_up_character_lcd_init(char_lcd_dev);
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
@@ -217,6 +217,7 @@ void updateStateFromKeys()
 	{
 		if(state == PLAYING_NORMAL)
 		{
+			sendStringToMiddleMan("P");
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PAUSED ");
 			alt_irq_disable(AUDIO_0_IRQ);
@@ -224,6 +225,7 @@ void updateStateFromKeys()
 		}
 		else if(state == PAUSED)
 		{
+			sendStringToMiddleMan("P");
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
 			alt_irq_enable(AUDIO_0_IRQ);
@@ -232,16 +234,23 @@ void updateStateFromKeys()
 	}
 	else if(key == 0x4)	//stop
 	{
+		sendStringToMiddleMan("S");
 		state = STOP;
 	}
 	else if(key == 0x2)	//next
 	{
+<<<<<<< HEAD
+		sendStringToMiddleMan("N");
 		state = NEXT_PLAY;
-		//sendStringToMiddleMan("T");
 	}
 	else if(key == 0x1)
 	{
+		sendStringToMiddleMan("L");
 		state = PREV_PLAY;
+=======
+		//state = NEXT_PLAY;
+		sendStringToMiddleMan("T");
+>>>>>>> 53f80ddcd440491d20187ccd5aaf227ba62334b4
 	}
 }
 
@@ -338,6 +347,7 @@ void updateState()
 			updateStateFromUART();
 		}
 	}
+	free(temp);
 }
 
 /*
@@ -540,13 +550,17 @@ void nextSong( int next )
 	if( (sw & 0x80) != 0x80)	// repeat the same song when SW7 == 1
 	{
 		if(next == 1)
+		{
 			currSong = (currSong + 1) % MAX_NUMBER_SONGS;
+			sendStringToMiddleMan("N");
+		}
 		else
 		{
 			if(currSong == 0)
 				currSong = MAX_NUMBER_SONGS - 1;
 			else
 				currSong = (currSong - 1) % MAX_NUMBER_SONGS;
+			sendStringToMiddleMan("L");
 		}
 	}
 }
@@ -582,7 +596,6 @@ void initialization()
 
 	/* UART RS232 */
 	uart = alt_up_rs232_open_dev("/dev/rs232_0");
-
 	clearMiddleManBuffer();
 
 	/* Interrupt */
@@ -611,7 +624,6 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 
 	free( temp );
 }
-
 
 /* Sends the detail of one song to the middle man
  * song cannot be NULL
@@ -696,9 +708,17 @@ void clearMiddleManBuffer()
 	}
 }
 
+<<<<<<< HEAD
 /* Use this function to update currSong when user clicks a song from android device
  * Given the id of the song, finds the song from the song detail list
  * Returns the index of the song in the list if successful, otherwise -1.
+=======
+/* This function is deprecated as of March 18th.
+ * Reads the song list from the middle man and prints the song list in one line.
+ * This function is used to check whether sending of song list work or not.
+ * The algorithm of this function can also be used by Daniel to implement
+ * 		reading from middle man in Android using Java.
+>>>>>>> 53f80ddcd440491d20187ccd5aaf227ba62334b4
  */
 int findSong( SongDetail** list, int numSongs, char* id )
 {
