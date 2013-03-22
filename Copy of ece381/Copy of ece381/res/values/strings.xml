@@ -14,5 +14,13 @@
     <string name="stop">Stop</string>
     <string name="refresh_socket">Show Sock.</string>
     <string name="song1">Song 1</string>
+    <string name="currentTime">0:00</string>
+    <string name="songTime">0:00</string>
+    <string name="timeDivider">/</string>
+    <string name="songTimeSecond">00</string>
+    <string name="songTimeMinute">0</string>
+    <string name="timeColon">:</string>
+    <string name="currentTimeMinute">0</string>
+    <string name="currentTimeSeconds">00</string>
 
 </resources>

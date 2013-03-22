@@ -18,11 +18,19 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
+	
+	/* Constants */
+	final static int ONE_BYTE = 1;
+	
+	/* Variables */
+	int songIndex;
+	double currentSongPositionInTime;
 	int count;
 	int volume;
 	boolean initialized;
@@ -32,36 +40,25 @@ public class MainActivity extends Activity {
 	String[] playlist;
 	ArrayList<HashMap<String, String>> list = new ArrayList<HashMap<String, String>>();
 	private SimpleAdapter adapter;
-	String[] mSongs;/*
-					 * = new String[]; { "AAA", "BBB", "CCC", "DDD", "EEE",
-					 * "aaa","abc","bbb","bcd","123", "AAA", "BBB", "CCC",
-					 * "DDD", "EEE", "FFF", "GGG","HHH", "III", "JJJ", "FFF",
-					 * "GGG","HHH", "III", "JJJ", "aaa","abc","bbb","bcd","123"
-					 * };
-					 */
-	String[] mArtists;/*
-					 * = new String[] { "Dan", "Sae", "Dan", "Dan", "Dan",
-					 * "Dan", "Sae", "Dan", "Dan", "Dan", "Dan", "Sae", "Dan",
-					 * "Dan", "Dan", "Dan", "Sae", "Dan", "Dan", "Dan", "Dan",
-					 * "Sae", "Dan", "Dan", "Dan", "FFF", "GGG","HHH", "III",
-					 * "JJJ", };
-					 */
-	String[] mRatings;/*
-					 * = new String[] { "1", "2", "3", "4", "5", "7", "6","5",
-					 * "4", "3", "1", "2", "3", "4", "5", "7", "6","3", "4",
-					 * "5", "1", "4", "5", "4", "5", "7", "6","5", "4", "3", };
-					 */
+	
+	/* Song Detail Arrays */
+	String[] mSongs;
+	String[] mArtists;
+	String[] mRatings;
 	String[] mId;
+	String[] mLengths;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		// This call will result in better error messages if you
 		// try to do things in the wrong thread.
 		volume = 4;
+		songIndex = 0;
+		currentSongPositionInTime = 0;
 
 		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 		Timer tcp_timer = new Timer();
-		tcp_timer.schedule(tcp_task, 3000, 500);
+		tcp_timer.schedule(tcp_task, 3000, 200);
 		new SocketConnect().execute((Void) null);
 		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
 				.detectDiskReads().detectDiskWrites().detectNetwork()
@@ -70,6 +67,7 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 		showPlaying = Toast.makeText(this, "", Toast.LENGTH_SHORT);
 		listView = (ListView) findViewById(R.id.listView);
+		
 		// Set up a timer task. We will use the timer to check the
 		// input queue every 500 ms
 		// initializeList(count);
@@ -118,7 +116,7 @@ public class MainActivity extends Activity {
 	public String getConnectToIP() {
 		// String addr = "192.168.0.101";
 		// String addr = "206.87.113.170";
-		String addr = "206.87.118.5";
+		String addr = "206.87.118.231";
 		// EditText text_ip= (EditText) findViewById(R.id.ip1);
 		// text_ip.setText(addr);
 		// EditText text_ip;
@@ -176,13 +174,18 @@ public class MainActivity extends Activity {
 		mArtists = new String[count];
 		mRatings = new String[count];
 		mId = new String[count];
+		mLengths = new String[count];
+		
 		int songCount = 0;
 		Log.i("indexNumber", Integer.toString(playlist.length));
-		for (int iterator = 1; iterator + 4 <= playlist.length; iterator += 4) {
+		
+		for (int iterator = 1; iterator + 5 <= playlist.length; iterator += 5) 
+		{
 			mId[songCount] = playlist[iterator];
 			mSongs[songCount] = playlist[iterator + 1];
 			mArtists[songCount] = playlist[iterator + 2];
 			mRatings[songCount] = playlist[iterator + 3];
+			mLengths[songCount]	= playlist[iterator + 4];
 			songCount++;
 		}
 		/*
@@ -240,6 +243,22 @@ public class MainActivity extends Activity {
 			myApp.sock = s;
 			// new
 			// SocketSend().execute("02.01.Super MArio.kai.5.02.LOL.new artist.4.");
+
+			try {
+				Log.i( "Prog", "Clearing UART" );
+				
+				InputStream in = s.getInputStream();
+				int bytes_avail = in.available();
+				if (bytes_avail > 0) {
+					// If so, read them in and create a string
+					byte buf[] = new byte[bytes_avail];
+					in.read(buf);
+				}
+			} catch (IOException e) {
+				Log.i( "Prog", "Clearing UART Failed" );
+				e.printStackTrace();
+			}
+
 			new SocketSend().execute("playlist");
 		}
 	}
@@ -277,95 +296,192 @@ public class MainActivity extends Activity {
 
 	// This is a timer Task. Be sure to work through the tutorials
 	// on Timer Tasks before trying to understand this code.
-	public class TCPReadTimerTask extends TimerTask {
-		public void run() {
+	public class TCPReadTimerTask extends TimerTask 
+	{
+		public void run() 
+		{
+			Log.i("Prog", "Read Timer Task started");
+
 			MyApplication app = (MyApplication) getApplication();
 			if (app.sock != null && app.sock.isConnected()
-					&& !app.sock.isClosed()) {
-				try {
+					&& !app.sock.isClosed()) 
+			{
+				try 
+				{
 					InputStream in = app.sock.getInputStream();
-					// See if any bytes are available from the Middleman
 					int bytes_avail = in.available();
-					if (bytes_avail > 0) {
-						// If so, read them in and create a string
-						byte buf[] = new byte[bytes_avail];
-						in.read(buf);
-						String msg = new String(buf, 0, bytes_avail, "US-ASCII");
+					
+					if (bytes_avail > 0) 
+					{
+						Log.i( "Prog", bytes_avail + "bytes are available to be read" );
 						
-						if ( !initialized )
+						byte buf[] = new byte[ONE_BYTE];
+						in.read(buf);
+						String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
+
+						if (!initialized) 
 						{
+							Log.i("Prog", "Receiving Song List");
+
 							new SocketSend().execute("A");
-	
-							while (true) {
+
+							while (true) 
+							{
 								bytes_avail = in.available();
-								if (bytes_avail > 0) {
-									buf = new byte[1];
+								if (bytes_avail > 0) 
+								{
+									buf = new byte[ONE_BYTE];
 									in.read(buf);
-									String tempStr = (new String(buf, 0, 1, "US-ASCII"));
-									
-									if (tempStr.compareTo("'") == 0) {
+									String tempStr = (new String(buf, 0, ONE_BYTE,	"US-ASCII"));
+
+									if (tempStr.compareTo("+") == 0) 
+									{
 										new SocketSend().execute("A");
 										continue;
 									}
-	
-									if (tempStr.compareTo(",") == 0) {
+
+									if (tempStr.compareTo(",") == 0) 
+									{
 										break;
 									}
-	
+
 									msg = msg.concat(tempStr);
 								}
 							}
+							Log.i("Prog", "Done Receiving Song List");
 						}
-						
+
 						final String s = new String(msg);
+
+						Log.i("Prog", "String s is: " + s);
 
 						// As explained in the tutorials, the GUI can not be
 						// updated in an asyncrhonous task. So, update the GUI
 						// using the UI thread.
-						runOnUiThread(new Runnable() {
-							public void run() {
+						runOnUiThread(new Runnable() 
+						{
+							public void run() 
+							{
+								Log.i("Prog", "Started Run On UI Thread");
+
 								TextView volumeT = (TextView) findViewById(R.id.viewText1);
 								TextView text = (TextView) findViewById(R.id.viewText2);
 
-								if (initialized == false) {
+								if (initialized == false) 
+								{
+									Log.i("Prog", "Initializing Song List");
+
 									String[] ss = s.split("\\.");
+									
 									for (int k = 0; k < ss.length; k++)
 										Log.i("ss", ss[k]);
+									
 									playlist = ss;
 									count = Integer.parseInt(ss[0]);
 									initializeList(count);
 									initialized = true;
 									text.setText("Press play");
-								} else if (s.compareTo("p") == 0) {
+								} 
+								else if (s.compareTo("p") == 0) 
+								{
 									text.setText("Paused");
-								} else if (s.compareTo("S") == 0) {
+								} 
+								else if (s.compareTo("S") == 0) 
+								{
 									text.setText("Stoppped");
-								} else if (s.compareTo("U") == 0) {
-									volumeT.setText("Volume = "
-											+ Integer.toString(volume));
-								} else if (s.compareTo("D") == 0) {
-									volumeT.setText("Volume = "
-											+ Integer.toString(volume));
-								} else if (s.compareTo("N") == 0) {
-
-								} else if (s.compareTo("L") == 0) {
-
-								} else {
-									int l = Integer.parseInt(s);
-									Log.i("indexNumber", Integer.toString(l));
-									text.setText("Playing: " + mSongs[l]);
-
+								} 
+								else if (s.compareTo("U") == 0) 
+								{
+									volumeT.setText("Volume = " + Integer.toString(volume));
+								} 
+								else if (s.compareTo("D") == 0) 
+								{
+									volumeT.setText("Volume = " + Integer.toString(volume));
+								} 
+								else if (s.compareTo("N") == 0) 
+								{
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									pb.setProgress( 0 );
+								} 
+								else if (s.compareTo("L") == 0) 
+								{
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									pb.setProgress( 0 );
+								} 
+								else if (s.compareTo("O") == 0) 
+								{
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									int songLength = Integer.parseInt( mLengths[songIndex] );
+									double progressInterval = 100.0 / songLength;
+									
+									currentSongPositionInTime += progressInterval;
+									pb.setProgress( (int) currentSongPositionInTime );
+									
+									updateTime( currentSongPositionInTime, songLength );
+									
+									Log.i("Prog", "Progress increased by " + progressInterval );
+									Log.i("Prog", "currentSongPosition is: " + currentSongPositionInTime );
+								} 
+								else 
+								{
+									Log.i("Prog", "s I have in Else is: " + s);
+									
+									songIndex = Integer.parseInt(s);
+									Log.i("indexNumber", Integer.toString(songIndex));
+									text.setText("Playing: " + mSongs[songIndex]);
+									
+									setupTime( Integer.parseInt( mLengths[songIndex] ) );
+									currentSongPositionInTime = 0;
 								}
 								// if(rowView!=null)
 								// rowView.setSelected(true);
 							}
 						});
 					}
-				} catch (IOException e) {
+				} 
+				catch (IOException e) 
+				{
 					e.printStackTrace();
 				}
 			}
 		}
+	}
+	
+	public void setupTime( int songLength )
+	{
+		TextView MaxTimeMin = (TextView) findViewById( R.id.textView5 );
+		TextView MaxTimeSec = (TextView) findViewById( R.id.textView7 );
+		
+		int maxMin = songLength / 60;
+		int maxSec = songLength % 60;
+		
+		String maxSecStr = Integer.toString( maxSec );
+		if ( maxSec < 10 )
+			maxSecStr = "0" + maxSecStr;
+		
+		MaxTimeMin.setText( Integer.toString( maxMin ) );
+		MaxTimeSec.setText( maxSecStr );
+	}
+	
+	public void updateTime( double currentSongPositionInTime, int songLength )
+	{
+		TextView currTimeMin = (TextView) findViewById( R.id.textView1 );
+		TextView currTimeSec = (TextView) findViewById( R.id.textView3 );
+		
+		int currTime = (int) (currentSongPositionInTime * songLength / 100.0 );
+		
+		if ( currTime > songLength )
+			return;
+		
+		int currMin = currTime / 60;
+		int currSec = currTime % 60;
+		
+		String currSecStr = Integer.toString( currSec );
+		if ( currSec < 10 )
+			currSecStr = "0" + currSecStr;
+		
+		currTimeMin.setText( Integer.toString( currMin ) );
+		currTimeSec.setText( currSecStr );
 	}
 
 	public class ChangeUI extends AsyncTask<Void, Void, Void> {
