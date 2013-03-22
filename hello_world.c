@@ -35,15 +35,16 @@ const int keys = 0x00004440;
 #define NAME_LENGTH 26
 #define ARTIST_LENGTH 21
 #define RATING_LENGTH 3
+#define TIME_LENGTH 4
 
-//const int SONG_SIZE = 65534;	//around 1 second long
+//#define SONG_SIZE 65534	//around 1 second long
 #define SONG_SIZE 32266
 #define WAV_HEADER_SIZE 44
 #define SAMPLE_SIZE 96
 
 volatile int song_index;	// 0 <= song_count < SONG_SIZE
 volatile int stream_flag;
-volatile unsigned int song_sample[96];
+//volatile unsigned int song_sample[96];
 unsigned int song_wav[2];
 unsigned int streamA[SONG_SIZE];
 unsigned int streamB[SONG_SIZE];
@@ -62,6 +63,7 @@ typedef struct {
 	char* name;
 	char* artist;
 	char* rating;
+	char* time;
 } SongDetail;
 
 /* Device references */
@@ -108,13 +110,13 @@ void nextSong( int next );
 void audio_isr( void * context, unsigned int irq_id );
 int streamSong( short int file_handle );
 int findSong( SongDetail** list, int numSong, char* id );
+void readTone( unsigned int* tone, int tone_size, char* name);
 
 /* Update */
 void updateStateFromKeys();
 void updateStateFromUART();
 void updateState();
 //void updateVolume();
-void notBeingCalled();
 
 int main()
 {
@@ -127,19 +129,38 @@ int main()
 	state = STOP;
 	numSongs = 0;
 
+
+/*
+		unsigned int t0[78362];
+		readTone(t0, 78362, "T0.wav");
+		int i = 0;
+		for(i = 0; i < 78362; i++)
+		{
+			alt_up_audio_write_fifo(audio, t0[i], 1, ALT_UP_AUDIO_LEFT);
+			alt_up_audio_write_fifo(audio, t0[i], 1, ALT_UP_AUDIO_RIGHT);
+
+			//usleep(20);
+		}
+
+		alt_up_audio_reset_audio_core(audio);
+*/
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
-	/*
-	char* message;
-	while ( !isThereSomething() )
+
+	char sw = IORD_8DIRECT(switches, 0);
+	if(sw == 0)
 	{
-		message = getWordFromMiddleMan();
-		printf( "%s.\n", message );
-		if( strcmp(message, "playlist") == 0)
-			break;
+		char* message;
+		while ( !isThereSomething() )
+		{
+			message = getWordFromMiddleMan();
+			printf( "%s.\n", message );
+			if( strcmp(message, "playlist") == 0)
+				break;
+		}
+		free(message);
+		sendSongListToMiddleMan( songDetailList, numSongs );
 	}
-	free(message);
-	sendSongListToMiddleMan( songDetailList, numSongs );
-	*/
+
 	int cc;
 	for(cc = 0; cc < numSongs; cc++)
 		printf("%s\t", songDetailList[cc]->id );
@@ -183,19 +204,18 @@ int main()
 			}
 
 			playSong( file_handle );
+			printf("stop stop\n");
 			stopSong( file_handle );
-
+			printf("stop stop stop\n");
 			if(state == NEXT_PLAY || state == PLAYING_NORMAL)
 			{
 				nextSong(1);
 				state = PLAYING_NORMAL;
-				//sendStringToMiddleMan( "N" );
 			}
 			else if(state == PREV_PLAY)
 			{
 				nextSong(0);
 				state = PLAYING_NORMAL;
-				//sendStringToMiddleMan( "L" );
 			}
 		}
 	}
@@ -266,7 +286,7 @@ void updateStateFromUART()
 			state = PAUSED;
 			sendStringToMiddleMan( "p" );
 		}
-		else if(state == PAUSED || state == STOP)
+		else if(state == STOP)
 		{
 			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
@@ -277,6 +297,14 @@ void updateStateFromUART()
 			sendStringToMiddleMan( buf );
 			free(buf);
 		}
+		else if(state == PAUSED)
+		{
+			alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
+			alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
+			alt_irq_enable(AUDIO_0_IRQ);
+			state = PLAYING_NORMAL;
+			sendStringToMiddleMan( "p" );
+		}
 	}
 	else if( strcmp(temp, "S") == 0 )	//stop
 	{
@@ -286,12 +314,10 @@ void updateStateFromUART()
 	else if( strcmp(temp, "N") == 0 )	//next
 	{
 		state = NEXT_PLAY;
-		sendStringToMiddleMan( "N" );
 	}
 	else if( strcmp(temp, "L") == 0)	//prev
 	{
 		state = PREV_PLAY;
-		sendStringToMiddleMan( "L" );
 	}
 	else if( strcmp(temp, "D") == 0)	//raise volume
 	{
@@ -313,21 +339,20 @@ void updateStateFromUART()
  */
 void updateState()
 {
-	//char* temp = "S";
 	char key;
 
 	if( state == STOP )
 	{
+		// stop state
 		key = 0;
 		while(key == 0)
 		{
 			// wait for command
 			key = IORD_8DIRECT(keys, 0);
-			//updateVolume();
 
 			if ( isThereSomething() )
 			{
-				printf ( "start there is a duck\n" );
+				//printf ( "start there is a duck\n" );
 				//temp = getWordFromMiddleMan();
 				updateStateFromUART();
 				break;
@@ -335,7 +360,6 @@ void updateState()
 		}
 		while(IORD_8DIRECT(keys, 0) != 0);
 
-		//if(key == 0x8 || strcmp(temp, "P") == 0)	//play
 		if(key == 0x8)	//play
 			state = PLAYING_NORMAL;
 		else if(key == 0x4)	//stop
@@ -343,26 +367,22 @@ void updateState()
 			// current state is STOP
 			// do nothing~
 		}
-		//else if(key == 0x2 || strcmp(temp, "N") == 0)
-		else if(key == 0x2 )
+		else if(key == 0x2 || state == NEXT_PLAY)
 		{
 			nextSong(1);
-			//sendStringToMiddleMan( "N" );
 		}
-		//else if(key == 0x1 || strcmp(temp, "L") == 0)
-		else if(key == 0x1 )
+		else if(key == 0x1 || state == PREV_PLAY)
 		{
 			nextSong(0);
-			//sendStringToMiddleMan( "L" );
 		}
+		// stop state
 	}
 	else
 	{
-		//updateVolume();
 		updateStateFromKeys();
 		if ( isThereSomething() )
 		{
-			printf ( "there is something\n" );
+			//printf ( "there is something\n" );
 			updateStateFromUART();
 		}
 	}
@@ -413,12 +433,14 @@ int playSong( short int file_handle )
 		if(state == PLAYING_NORMAL)
 		{
 			isLastSecond = streamSong( file_handle );
-			while(stream_flag == prev_stream_flag);
-			//{
-				//if( state != PLAYING_NORMAL)
-			//		stream_flag = !prev_stream_flag;
-			//}
+			while(stream_flag == prev_stream_flag)	//wait for this second to pass
+			{
+				if( state != PLAYING_NORMAL)	// it is used to fix the pause next thing
+					stream_flag = !prev_stream_flag;
+			}
 			prev_stream_flag = stream_flag;
+			if(state == PLAYING_NORMAL)
+				sendStringToMiddleMan( "O" );
 		}
 		else if(state == STOP)
 		{
@@ -431,6 +453,7 @@ int playSong( short int file_handle )
 
 		if(isLastSecond)
 		{
+			sendStringToMiddleMan( "O" );
 			printf("last sec\n");
 			// play the last second
 			while(stream_flag == prev_stream_flag);
@@ -450,6 +473,7 @@ int playSong( short int file_handle )
 void audio_isr (void * context, unsigned int irq_id)
 {
 	// fill 96 samples
+	unsigned int song_sample[96];
 	int cc;
 	unsigned int* song;
 	if(stream_flag == 0)
@@ -532,7 +556,6 @@ int streamSong( short int file_handle )
 				streamA_size = i;
 			else
 				streamB_size = i;
-			sendStringToMiddleMan( "O" );
 			return 1;
 		}
 		buf[1] = alt_up_sd_card_read( file_handle );
@@ -550,8 +573,8 @@ int streamSong( short int file_handle )
 		//if(state == STOP || state == NEXT_PLAY || state == PREV_PLAY)
 		if(state != PLAYING_NORMAL)
 		{
-			printf("stop\n");
-			i = SONG_SIZE;//break;
+			printf("stop streaming\n");
+			break;
 		}
 	}
 
@@ -565,7 +588,6 @@ int streamSong( short int file_handle )
 	printf("It took %d cycles (%f seconds) to stream one second \n", cycles, duration);
 	*/
 
-	sendStringToMiddleMan( "O" );
 	return 0;
 }
 
@@ -593,13 +615,17 @@ void nextSong( int next )
 	if( (sw & 0x80) != 0x80)	// repeat the same song when SW7 == 1
 	{
 		if(next == 1)
+		{
 			currSong = (currSong + 1) % numSongs;
+			sendStringToMiddleMan( "N" );
+		}
 		else
 		{
 			if(currSong == 0)
 				currSong = numSongs - 1;
 			else
 				currSong = (currSong - 1) % numSongs;
+			sendStringToMiddleMan( "L" );
 		}
 	}
 }
@@ -689,7 +715,7 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 	for ( i = 0; i < numSong; i++ )
 	{
 		sendOneSongDetailToMiddleMan( songList[i] );
-		sendStringToMiddleMan( "'" );
+		sendStringToMiddleMan( "+" );
 
 		while ( !isThereSomething() )
 		{
@@ -718,7 +744,9 @@ void sendOneSongDetailToMiddleMan( SongDetail* song )
 	sendStringToMiddleMan( song->artist );
 	sendStringToMiddleMan( "." );
 	sendStringToMiddleMan( song->rating );
-	sendStringToMiddleMan( ".");
+	sendStringToMiddleMan( "." );
+	sendStringToMiddleMan( song->time );
+	sendStringToMiddleMan ( "." );
 
 }
 
@@ -1162,7 +1190,7 @@ SongDetail** getListOfSongDetails( int *numSong )
 		}
 
 		// Debugging purpose
-		printf( "Song: %s(sizeOfID: %d) %s %s %s\n", songList[i]->id, (int)strlen( songList[i]->id ), songList[i]->name, songList[i]->artist, songList[i]->rating );
+		printf( "Song: %s(sizeOfID: %d) %s %s %s %s\n", songList[i]->id, (int)strlen( songList[i]->id ), songList[i]->name, songList[i]->artist, songList[i]->rating, songList[i]->time );
 	}
 
 	closeFileInSD( file_handle );
@@ -1178,8 +1206,9 @@ char initializeSongDetail( SongDetail* song )
 	song->name = (char*)malloc( NAME_LENGTH );
 	song->artist = (char*)malloc( ARTIST_LENGTH );
 	song->rating = (char*)malloc( RATING_LENGTH );
+	song->time = (char*)malloc( TIME_LENGTH );
 
-	if ( !song->id || !song->name || !song->artist || !song->rating )
+	if ( !song->id || !song->name || !song->artist || !song->rating || !song->time)
 	{
 		printf( "Error: no more memory to malloc for song detail elements.\n" );
 		return -1;
@@ -1194,7 +1223,7 @@ char initializeSongDetail( SongDetail* song )
 SongDetail* readDetailForOneSong( short int file_handle )
 {
 	SongDetail* song = (SongDetail*)malloc(sizeof(SongDetail));
-	char t1, t2, t3, t4;
+	char t1, t2, t3, t4, t5;
 
 	if ( !song )
 	{
@@ -1209,8 +1238,9 @@ SongDetail* readDetailForOneSong( short int file_handle )
 	t2 = readWordFromSD( song->name, NAME_LENGTH, file_handle );
 	t3 = readWordFromSD( song->artist, ARTIST_LENGTH, file_handle );
 	t4 = readWordFromSD( song->rating, RATING_LENGTH, file_handle );
+	t5 = readWordFromSD( song->time, TIME_LENGTH, file_handle );
 
-	if ( t1 == -1 || t2 == -1 || t3 == -1 || t4 == -1 )
+	if ( t1 == -1 || t2 == -1 || t3 == -1 || t4 == -1 || t5 == -1 )
 		return NULL;
 
 	/* Removes the carraige return character */
@@ -1276,63 +1306,32 @@ char readACharFromSD( short int file_handle )
 }
 
 /*
- * WHY WHY WHY WHY WHY WHY WHY
- * adding this little function improves the performance
- * IT IS NOT BEING CALLED
- *  WHY WHY WHY WHY WHY WHY WHY
+ * read a tone into memory
  */
-/*void notBeingCalled()
+void readTone( unsigned int* tone, int tone_size, char* name)
 {
-	char key;
+	short int file_handle;
+	int buf[2];
+	if( openFileInSD( name, &file_handle ) == 0)
+	{
+		int cc;
+		for(cc = 0; cc < WAV_HEADER_SIZE; cc++)
+			alt_up_sd_card_read( file_handle );
 
-		if( state == STOP )
+		while(1)
 		{
-			key = 0;
-			while(key == 0)
+			buf[0] = alt_up_sd_card_read( file_handle );
+			if( buf[0] < 0 )	//reach eof
 			{
-				// wait for command
-				key = IORD_8DIRECT(keys, 0);
-				//updateVolume();
+				printf("tone size is of %s is %d\n", name, cc);
+				break;
+			}
+			buf[1] = alt_up_sd_card_read( file_handle );
 
-				if ( isThereSomething() )
-				{
-					printf ( "start there is a duck\n" );
-					//temp = getWordFromMiddleMan();
-					updateStateFromUART();
-					break;
-				}
-			}
-			while(IORD_8DIRECT(keys, 0) != 0);
+			tone[cc] = ((buf[1]<<8)|buf[0])<<8;
+			cc++;
+		}
+	}
+	closeFileInSD( file_handle );
+}
 
-			//if(key == 0x8 || strcmp(temp, "P") == 0)	//play
-			if(key == 0x8)	//play
-				state = PLAYING_NORMAL;
-			else if(key == 0x4)	//stop
-			{
-				// current state is STOP
-				// do nothing~
-			}
-			//else if(key == 0x2 || strcmp(temp, "N") == 0)
-			else if(key == 0x2 )
-			{
-				nextSong(1);
-				//sendStringToMiddleMan( "N" );
-			}
-			//else if(key == 0x1 || strcmp(temp, "L") == 0)
-			else if(key == 0x1 )
-			{
-				nextSong(0);
-				//sendStringToMiddleMan( "L" );
-			}
-		}
-		else
-		{
-			//updateVolume();
-			updateStateFromKeys();
-			if ( isThereSomething() )
-			{
-				printf ( "there is something\n" );
-				updateStateFromUART();
-			}
-		}
-}*/
