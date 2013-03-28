@@ -94,6 +94,7 @@ void sendSongListToMiddleMan( SongDetail** songList, int numSong );
 void sendOneSongDetailToMiddleMan( SongDetail* song );
 
 /* DE2 to MiddleMan function */
+void sendHandShakedLongMessageToMiddleMan( char command, char* str );
 void sendStringToMiddleMan( char* str );
 
 /* MiddleMan to DE2 function */
@@ -164,6 +165,7 @@ int main()
 	int cc;
 	for(cc = 0; cc < numSongs; cc++)
 		printf("%s\t", songDetailList[cc]->id );
+	printf( "\n" );
 
 	while(1)
 	{
@@ -330,6 +332,10 @@ void updateStateFromUART()
 		sendStringToMiddleMan( "U" );
 		if(volume > 0)
 			volume--;
+	}
+	else if( strcmp(temp, "M" ) == 0 )	// debugging purpose
+	{
+		sendHandShakedLongMessageToMiddleMan( 'M', "This is the long message" );
 	}
 	free(temp);
 }
@@ -748,6 +754,33 @@ void sendOneSongDetailToMiddleMan( SongDetail* song )
 	sendStringToMiddleMan( song->time );
 	sendStringToMiddleMan ( "." );
 
+}
+
+/* Sends long message to the middle man no more than 128 bytes
+ * str cannot be NULL
+ * str cannot be longer than 99999 chars.
+ */
+void sendHandShakedLongMessageToMiddleMan( char command, char* str )
+{
+	int i;
+	char buffer[5]; // Gonna change the magic number
+
+	alt_up_rs232_write_data( uart, command );
+	printf( "Sent %c\n", command );
+
+	sprintf( buffer, "%d", (int)strlen( str ) );
+	alt_up_rs232_write_data( uart, (int) strlen(buffer) );  // Number of digits of the number of chars of data
+	printf( "Sent %d\n", (int) strlen( buffer ) );
+
+	char* buffer2 = malloc( (int) strlen( buffer ) + 1 );
+	sprintf( buffer2, "%d", (int) strlen( str ) );
+	sendStringToMiddleMan( buffer2 );  // Number of chars of data
+	printf( "Sent %s\n", buffer2 );
+
+	for ( i = 0; i < strlen(str); i++ )
+		alt_up_rs232_write_data( uart, str[i] );
+
+	free( buffer2 );
 }
 
 /* Sends one string to the middle man
@@ -1334,4 +1367,5 @@ void readTone( unsigned int* tone, int tone_size, char* name)
 	}
 	closeFileInSD( file_handle );
 }
+
 

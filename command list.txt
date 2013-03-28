@@ -5,4 +5,5 @@ ButtonPanel
 "L" Prev
 "U" Raise the volume
 "D" Lower the volume
+"M" Longer message
 "T3" Playing song id 3
