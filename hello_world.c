@@ -14,9 +14,9 @@
 #include "sys/alt_irq.h"
 
 /* Define I/O ports */
-const int SWITCHES = 0x00004420;
-//#define leds (char *) 0x00004430
-const int KEYS = 0x00004440;
+const int SWITCHES = 0x00002420;
+//#define leds (char *) 0x00002430
+const int KEYS = 0x00002440;
 
 /* Define states */
 #define STOP 0
@@ -37,9 +37,9 @@ const int KEYS = 0x00004440;
 #define RATING_LENGTH 3
 #define TIME_LENGTH 4
 
-//#define SONG_SIZE 65534
-//#define SONG_SIZE 32266
-#define SONG_SIZE 16384
+//#define SONG_SIZE 65472
+#define SONG_SIZE 32266
+//#define SONG_SIZE 16384
 #define WAV_HEADER_SIZE 44
 #define SAMPLE_SIZE 96
 
@@ -48,6 +48,7 @@ volatile int stop_flag;
 volatile int play_index;
 volatile int read_index;
 volatile unsigned int stream[SONG_SIZE];
+volatile int isOneSec;
 
 int numSongs;
 int currSong;
@@ -129,7 +130,7 @@ int main()
 
 	play_index = 0;
 	read_index = 0;
-
+	isOneSec = 0;
 	numSongs = 0;
 
 	alt_up_character_lcd_init(char_lcd_dev);
@@ -433,7 +434,10 @@ void audio_isr (void * context, unsigned int irq_id)
 		song_sample[cc] = stream[play_index];
 		play_index++;
 		if(play_index == SONG_SIZE)
+		{
 			play_index = 0;
+			isOneSec = 1;
+		}
 
 		if(stop_flag && play_index == read_index)
 		{
@@ -470,6 +474,7 @@ int playSong( short int file_handle, int currState)
 	play_index = 0;
 	read_index = 0;
 	stop_flag = 0;
+	isOneSec = 0;
 
 	// read the 1st second
 	int i = 0;
@@ -491,12 +496,12 @@ int playSong( short int file_handle, int currState)
 	sendHandShakedLongMessageToMiddleMan( 'M', songID );
 	free( songID );
 
-	int isOneSec = 0;	// ToDo: send"O" every second
 	int eof = 0;
 	int wasPaused = 0;
 	alt_irq_enable(AUDIO_0_IRQ);
 
 	volatile int state = PLAYING_NORMAL;
+	//int time = 0;
 	while(1)
 	{
 		state = updateState(state);
@@ -543,7 +548,17 @@ int playSong( short int file_handle, int currState)
 			stream[read_index] = ((buf[1]<<8)|buf[0])<<8;
 			read_index++;
 			if(read_index == SONG_SIZE)
+			{
 				read_index = 0;
+			}
+
+			if(isOneSec)
+			{
+				sendStringToMiddleMan( "O" );
+				isOneSec = 0;
+				//time++;
+				//printf("%d\n", time);
+			}
 		}
 	}
 	printf("should not get to here\n");
@@ -560,9 +575,7 @@ void stopSong( short int file_handle )
 	alt_up_character_lcd_string(char_lcd_dev, "STOP   ");
 	alt_irq_disable(AUDIO_0_IRQ);
 	alt_up_audio_reset_audio_core(audio);
-	int cc = 0;
-	for(cc = 0; cc < SONG_SIZE; cc++)
-		stream[cc] = 0;
+	memset(&stream, 0, sizeof(stream));
 	closeFileInSD(file_handle);
 }
 
