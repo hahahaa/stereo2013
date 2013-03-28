@@ -84,6 +84,13 @@
                     android:onClick="prevSong"
                     android:text="Prev" />
 
+                <Button
+                    android:id="@+id/button8"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:onClick="debugHandShakedLongMessage"
+                    android:text="DEBUG" />
+
             </LinearLayout>
 
             <LinearLayout
