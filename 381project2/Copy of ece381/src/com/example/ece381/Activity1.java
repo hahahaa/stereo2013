@@ -177,7 +177,7 @@ public class Activity1 extends Activity {
 		mLengths = new String[count];
 		
 		int songCount = 0;
-		Log.i("indexNumber", Integer.toString(playlist.length));
+		Log.i("indexNumber", "playlist length is: " + Integer.toString(playlist.length));
 		
 		for (int iterator = 1; iterator + 5 <= playlist.length; iterator += 5) 
 		{
@@ -389,9 +389,10 @@ public class Activity1 extends Activity {
 							}
 						}
 						
-						final String s = new String(msg);
+						final String command = new String(msg);
+						final String message = new String( data );
 
-						Log.i("HandShake", "String s is: " + s);
+						Log.i("HandShake", "String s is: " + command);
 
 						// As explained in the tutorials, the GUI can not be
 						// updated in an asyncrhonous task. So, update the GUI
@@ -412,7 +413,7 @@ public class Activity1 extends Activity {
 								{
 									Log.i("Prog", "Initializing Song List");
 
-									String[] ss = s.split("\\.");
+									String[] ss = command.split("\\.");
 									
 									for (int k = 0; k < ss.length; k++)
 										Log.i("ss", ss[k]);
@@ -423,33 +424,37 @@ public class Activity1 extends Activity {
 									initialized = true;
 									text.setText("Press play");
 								} 
-								else if (s.compareTo("p") == 0) 
+								else if ( command.compareTo( "P" ) == 0 )
+								{
+									text.setText("Playing: " + mSongs[songIndex]);
+								}
+								else if (command.compareTo("p") == 0) 
 								{
 									text.setText("Paused");
 								} 
-								else if (s.compareTo("S") == 0) 
+								else if (command.compareTo("S") == 0) 
 								{
 									text.setText("Stoppped");
 								} 
-								else if (s.compareTo("U") == 0) 
+								else if (command.compareTo("U") == 0) 
 								{
 									volumeT.setText("Volume = " + Integer.toString(volume));
 								} 
-								else if (s.compareTo("D") == 0) 
+								else if (command.compareTo("D") == 0) 
 								{
 									volumeT.setText("Volume = " + Integer.toString(volume));
 								} 
-								else if (s.compareTo("N") == 0) 
+								else if (command.compareTo("N") == 0) 
 								{
 									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
 									pb.setProgress( 0 );
 								} 
-								else if (s.compareTo("L") == 0) 
+								else if (command.compareTo("L") == 0) 
 								{
 									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
 									pb.setProgress( 0 );
 								} 
-								else if (s.compareTo("O") == 0) 
+								else if (command.compareTo("O") == 0) 
 								{
 									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
 									int songLength = Integer.parseInt( mLengths[songIndex] );
@@ -463,13 +468,23 @@ public class Activity1 extends Activity {
 									Log.i("Prog", "Progress increased by " + progressInterval );
 									Log.i("Prog", "currentSongPosition is: " + currentSongPositionInTime );
 								}
-								else if (s.compareTo("M") == 0) 
+								else if (command.compareTo("M") == 0) 
 								{
 									Log.i( "HandShake", "Successfully reached here" );
+									
+									Log.i("Prog", "s I have in Else is: " + command);
+									
+									songIndex = Integer.parseInt( message );
+									Log.i("indexNumber", Integer.toString(songIndex));
+									text.setText("Playing: " + mSongs[songIndex]);
+									
+									setupTime( Integer.parseInt( mLengths[songIndex] ) );
+									currentSongPositionInTime = 0;
 								} 
-								else 
+								else // to be modified
 								{
-									Log.i("Prog", "s I have in Else is: " + s);
+									/*
+									Log.i("Prog", "s I have in Else is: " + command);
 									
 									songIndex = Integer.parseInt(s);
 									Log.i("indexNumber", Integer.toString(songIndex));
@@ -477,6 +492,7 @@ public class Activity1 extends Activity {
 									
 									setupTime( Integer.parseInt( mLengths[songIndex] ) );
 									currentSongPositionInTime = 0;
+									*/
 								}
 								// if(rowView!=null)
 								// rowView.setSelected(true);
