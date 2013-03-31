@@ -98,12 +98,14 @@ char readWordFromSD( char* name, const int length, short int file_handle );
 void sendSongListToMiddleMan( SongDetail** songList, int numSong );
 void sendOneSongDetailToMiddleMan( SongDetail* song );
 
+/* Receive list from Android functions */
+void receivePlayListFromMiddleMan( int* playList, int* size );
+
 /* DE2 to MiddleMan function */
 void sendStringToMiddleMan( char* str );
 void sendHandShakedLongMessageToMiddleMan( char command, char* str );
 
 /* MiddleMan to DE2 function */
-//void getSongListFromMiddleManAndPrintForDebuggingPurpose();
 char* getWordFromMiddleMan();
 unsigned char getByteFromMiddleMan();
 int isThereSomething();
@@ -753,6 +755,36 @@ void initialization()
 	alt_up_audio_enable_write_interrupt(audio);
 	alt_irq_register(AUDIO_0_IRQ, 0, (alt_isr_func)audio_isr);
 	alt_irq_disable(AUDIO_0_IRQ);
+}
+
+/* Receives play list from Middle man
+ * Stores the play list in playList
+ * Stores the size of the playList in size
+ * Pre: playList != null && size != null
+ */
+void receivePlayListFromMiddleMan( int* playList, int* size )
+{
+	char* buffer;
+	int i;
+
+	printf("Receiving play list from MiddleMan\n");
+
+	buffer = getWordFromMiddleMan();
+	int numToReceive = atoi( buffer );
+	free( buffer );
+	printf("Number of Songs to receive is: %d\n", numToReceive );
+
+	for ( i = 0; i < numToReceive; i++ )
+	{
+		buffer = getWordFromMiddleMan();
+		playList[i] = atoi( buffer );
+		free( buffer );
+		printf( "playList[i] received is: %d\n", playList[i] );
+	}
+	printf( "Done Receiving play list from MiddleMan\n" );
+
+	*size = i;
+	free( buffer );
 }
 
 void sendSongListToMiddleMan( SongDetail** songList, int numSong )
