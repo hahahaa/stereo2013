@@ -15,7 +15,7 @@
 
 /* Define I/O ports */
 const int SWITCHES = 0x00002420;
-//#define leds (char *) 0x00002430
+const int leds = 0x00002430;
 const int KEYS = 0x00002440;
 
 /* Define states */
@@ -42,6 +42,7 @@ const int KEYS = 0x00002440;
 //#define SONG_SIZE 16384
 #define WAV_HEADER_SIZE 44
 #define SAMPLE_SIZE 96
+#define MIX_SONG_SIZE 690000
 
 volatile int volume;
 volatile int stop_flag;
@@ -49,11 +50,18 @@ volatile int play_index;
 volatile int read_index;
 volatile unsigned int stream[SONG_SIZE];
 volatile int isOneSec;
+volatile int mix_index;
+volatile unsigned int Mix1[MIX_SONG_SIZE];
+volatile unsigned int Mix2[MIX_SONG_SIZE];
+volatile int mix_flag;
+volatile int isListChanged;
 
 int numSongs;
 int currSong;
 int shuffle_flag;
-volatile int aa;	// debugging thing
+int repeat_flag;
+int* playList;
+int playListSize;
 
 typedef struct {
 	char* id;
@@ -104,12 +112,13 @@ void clearMiddleManBuffer();
 /* Song Functions */
 int playSong( short int file_handle, int state );
 void stopSong( short int file_handle );
-void nextSong( int next );
+int nextSong( int next );
 void audio_isr( void * context, unsigned int irq_id );
 int findSong( SongDetail** list, int numSong, char* id );
 void readTone( unsigned int* tone, int tone_size, char* name);
 void runStopState( SongDetail** list );
 int runPlayingState( SongDetail** list );
+void shufflePlayList( int* list, int size );
 
 /* Update */
 int updateStateFromUART( int prevState );
@@ -118,26 +127,42 @@ int updateStateWhileStop();
 int updateStateWhilePlaying( int prevState );
 int updateState( int prevState );
 
+/* Mixing */
+void readSong( unsigned int* song, int size, char* fileName );
+
 int main()
 {
 	initialization();
 
-	stop_flag = 0;
-	currSong = 0;
-	shuffle_flag = 0;
-	volume = 0;
-	int state = STOP;
+	volume = 4;
+	currSong = 3;
 
+	stop_flag = 0;
+	repeat_flag = 0;
+	shuffle_flag = 0;
+	mix_flag = 0;
+
+	mix_index = 0;
 	play_index = 0;
 	read_index = 0;
 	isOneSec = 0;
 	numSongs = 0;
+	isListChanged = 0;
 
+	int state = STOP;
 	alt_up_character_lcd_init(char_lcd_dev);
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 	alt_up_character_lcd_string(char_lcd_dev, "READING SD CARD ");
 
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
+	readSong( Mix1, MIX_SONG_SIZE, "M1.wav");
+	readSong( Mix2, MIX_SONG_SIZE, "M2.wav");
+
+	IORD_8DIRECT(leds, 0xFF);
+
+	alt_up_character_lcd_init(char_lcd_dev);
+	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
+	alt_up_character_lcd_string(char_lcd_dev, "MIDDLEMAN       ");
 
 	char sw = IORD_8DIRECT(SWITCHES, 0);
 	if(sw == 0)
@@ -158,6 +183,13 @@ int main()
 		printf("%s\t", songDetailList[cc]->id );
 	printf("\n");
 
+	playList = malloc(numSongs * sizeof(int));
+	for(cc = 0; cc < numSongs; cc++)
+		playList[cc] = cc;
+	playListSize = numSongs;
+
+	srand(cc);	//TODO: random number generator
+	//shufflePlayList( playList, numSongs );
 	while(1)
 	{
 		if( state == STOP || state == NEXT_PLAY || state == PREV_PLAY )
@@ -187,6 +219,17 @@ int main()
  */
 int updateState( int prevState )
 {
+	char sw = IORD_8DIRECT(SWITCHES, 0);
+	if(sw == 2)
+		mix_flag = 1;
+	else if(sw == 3)
+		mix_flag = 2;
+	else
+	{
+		mix_index = 0;
+		mix_flag = 0;
+	}
+
 	int returnState = prevState;
 	if( prevState == STOP )
 	{
@@ -262,14 +305,32 @@ int updateStateFromUART( int prevState )
 	else if( strcmp(temp, "D") == 0)	//raise volume
 	{
 		sendStringToMiddleMan( "D" );
-		if(volume < 4)
-			volume++;
+		volume--;
+		printf("volume = %d\n", volume);
 	}
 	else if( strcmp(temp, "U") == 0)	//lower volume
 	{
 		sendStringToMiddleMan( "U" );
-		if(volume > 0)
-			volume--;
+		volume++;
+		printf("volume = %d\n", volume);
+	}
+	else if( strcmp(temp, "R") == 0)	//set to repeat the current song
+	{
+		repeat_flag = 1;
+	}
+	else if( strcmp(temp, "r") == 0)
+	{
+		repeat_flag = 0;
+	}
+	else if( strcmp(temp, "H") == 0)	//shuffle the play list
+	{
+		shuffle_flag = 1;
+		isListChanged = 1;
+	}
+	else if( strcmp(temp, "h") == 0)
+	{
+		shuffle_flag = 0;
+		isListChanged = 1;
 	}
 	free(temp);
 	return state;
@@ -308,11 +369,15 @@ int updateStateFromKeysWhilePlaying( int prevState )
 	}
 	else if(key == 0x2)	//next
 	{
-		state = NEXT_PLAY;
+		//state = NEXT_PLAY;
+		volume++;
+		printf("volume: %d\n", volume);
 	}
 	else if(key == 0x1)
 	{
-		state = PREV_PLAY;
+		//state = PREV_PLAY;
+		volume--;
+		printf("volume: %d\n", volume);
 	}
 	return state;
 }
@@ -346,12 +411,12 @@ int updateStateWhileStop()
 	}
 	else if(key == 0x2 || returnState == NEXT_PLAY)
 	{
-		nextSong(1);
+		currSong = nextSong(1);
 		return NEXT_PLAY;
 	}
 	else if(key == 0x1 || returnState == PREV_PLAY)
 	{
-		nextSong(0);
+		currSong = nextSong(0);
 		return PREV_PLAY;
 	}
 	return returnState;
@@ -369,10 +434,11 @@ int runPlayingState( SongDetail** list )
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 	alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
-	alt_up_character_lcd_string(char_lcd_dev, list[currSong]->name);
+	alt_up_character_lcd_string(char_lcd_dev, list[ playList[currSong] ]->name);
 
 	char temp[ID_LENGTH + EXTENSION_LENGTH];
-	strcpy( temp, list[currSong]->id );
+	printf("currSong: %d  playList[currSong]: %d\n", currSong, playList[currSong]);
+	strcpy( temp, list[ playList[currSong] ]->id );
 	strcat( temp, ".wav" );
 	if( openFileInSD( temp, &file_handle ) == 0)
 	{
@@ -384,17 +450,24 @@ int runPlayingState( SongDetail** list )
 		exit(1);
 	}
 
+	// send the song index to andriod
+	char* songIndex = (char*)malloc( 3 );
+	//printf("numSongs: %d, currSong: %d, list[currSong]->id: %s\n", numSongs, currSong, list[ currSong ]->id);
+	sprintf( songIndex, "%d", findSong(list, numSongs, list[playList[currSong]]->id) );
+	sendHandShakedLongMessageToMiddleMan( 'M', songIndex );
+	free( songIndex );
+
 	int state = playSong( file_handle, PLAYING_NORMAL );
 	stopSong( file_handle );
 
 	if(state == NEXT_PLAY || state == PLAYING_NORMAL)
 	{
-		nextSong(1);
+		currSong = nextSong(1);
 		return PLAYING_NORMAL;
 	}
 	else if(state == PREV_PLAY)
 	{
-		nextSong(0);
+		currSong = nextSong(0);
 		return PLAYING_NORMAL;
 	}
 	else
@@ -414,7 +487,7 @@ void runStopState( SongDetail** list )
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 	alt_up_character_lcd_string(char_lcd_dev, "STOP            ");
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
-	alt_up_character_lcd_string(char_lcd_dev, list[currSong]->name);
+	alt_up_character_lcd_string(char_lcd_dev, list[ playList[currSong] ]->name);
 }
 
 /*
@@ -432,6 +505,23 @@ void audio_isr (void * context, unsigned int irq_id)
 	for(cc = 0; cc < SAMPLE_SIZE; cc++)
 	{
 		song_sample[cc] = stream[play_index];
+
+		if(mix_flag == 1)
+		{
+			song_sample[cc] = song_sample[cc] + Mix1[mix_index];
+			mix_index++;
+			if(mix_index == MIX_SONG_SIZE)
+				mix_index = 0;
+			song_sample[cc] = song_sample[cc]>>1;
+		}
+		else if(mix_flag == 2)
+		{
+			song_sample[cc] = song_sample[cc] + Mix2[mix_index];
+			mix_index++;
+			if(mix_index == MIX_SONG_SIZE)
+				mix_index = 0;
+			song_sample[cc] = song_sample[cc]>>1;
+		}
 		play_index++;
 		if(play_index == SONG_SIZE)
 		{
@@ -446,15 +536,23 @@ void audio_isr (void * context, unsigned int irq_id)
 		}
 
 		// lower the volume
-		if(volume == 4)
+		if(volume == 0)
 			song_sample[cc] = 0;
-		else if(volume != 0)
+		else
 		{
-			if(song_sample[cc] >= 0x800000)
-				song_sample[cc] = (song_sample[cc]>>volume)|0xE00000;
-			else
-				song_sample[cc] = song_sample[cc]>>volume;
+			//if(song_sample[cc] >= 0x800000)
+			//	song_sample[cc] = (song_sample[cc]>>volume)|0xE00000;
+			//else
+			//	song_sample[cc] = song_sample[cc]>>volume;
+			//int i;
+			//for(i = 0; i < volume; i++)
+			//	if(song_sample[cc] >= 0x800000)
+			//		song_sample[cc] = (song_sample[cc]>>1)|0x800000;
+			//	else
+			//		song_sample[cc] = song_sample[cc]>>1;
+			song_sample[cc] = song_sample[cc] << volume;
 		}
+		//song_sample[cc] = song_sample[cc] & 0x00FFFFFF;	//try this
 	}
 
 	alt_up_audio_write_fifo(audio, song_sample, SAMPLE_SIZE, ALT_UP_AUDIO_LEFT);
@@ -473,6 +571,7 @@ int playSong( short int file_handle, int currState)
 	int buf[2];
 	play_index = 0;
 	read_index = 0;
+	mix_index = 0;
 	stop_flag = 0;
 	isOneSec = 0;
 
@@ -487,14 +586,8 @@ int playSong( short int file_handle, int currState)
 		if( buf[0] < 0 )	//reach eof
 			break;
 		buf[1] = alt_up_sd_card_read( file_handle );
-		stream[read_index] = ((buf[1]<<8)|buf[0])<<8;
+		stream[read_index] = ((buf[1]<<8)|buf[0]);
 	}
-
-	// send the song ID to andriod
-	char* songID = (char*)malloc( 3 );
-	sprintf( songID, "%d", currSong );
-	sendHandShakedLongMessageToMiddleMan( 'M', songID );
-	free( songID );
 
 	int eof = 0;
 	int wasPaused = 0;
@@ -545,7 +638,10 @@ int playSong( short int file_handle, int currState)
 			}
 			buf[1] = alt_up_sd_card_read( file_handle );
 
-			stream[read_index] = ((buf[1]<<8)|buf[0])<<8;
+			stream[read_index] = ((buf[1]<<8)|buf[0]);
+			if( (stream[read_index] & 0x8000) > 0 )
+				stream[read_index] = stream[read_index] | 0xFFFF0000;
+			stream[read_index] = stream[read_index];
 			read_index++;
 			if(read_index == SONG_SIZE)
 			{
@@ -584,25 +680,43 @@ void stopSong( short int file_handle )
  * if next == 1, play the next song
  * otherwise, play the previous song
  */
-void nextSong( int next )
+int nextSong( int next )
 {
-	char sw = IORD_8DIRECT(SWITCHES, 0);
-	if( (sw & 0x80) != 0x80)	// repeat the same song when SW7 == 1
+	int tmp = 0;
+	if(isListChanged == 1)
+	{
+		if(shuffle_flag == 1)
+			shufflePlayList( playList, numSongs );
+		else
+		{
+			int i;
+			for(i = 0; i < numSongs; i++)
+				playList[i] = i;
+		}
+		isListChanged = 0;
+	}
+
+	if(repeat_flag == 0)
 	{
 		if(next == 1)
 		{
-			currSong = (currSong + 1) % numSongs;
-			sendStringToMiddleMan( "N" );
+			tmp = (currSong + 1) % numSongs;
 		}
 		else
 		{
 			if(currSong == 0)
-				currSong = numSongs - 1;
+				tmp = numSongs - 1;
 			else
-				currSong = (currSong - 1) % numSongs;
-			sendStringToMiddleMan( "L" );
+				tmp  = (currSong - 1) % numSongs;
 		}
 	}
+	else
+	{
+		printf("repeat\n");	//debug
+		return currSong;
+	}
+
+	return tmp;
 }
 
 /*
@@ -1023,4 +1137,58 @@ int findSong( SongDetail** list, int numSong, char* id )
 			return i;
 	}
 	return -1;
+}
+
+/*
+ * shuffle the numbers in the list
+ */
+void shufflePlayList( int* list, int size )
+{
+	int i, j, tmp;
+	for(i = size - 1; i >= 1; i--)
+	{
+		j = rand() % i;
+		tmp = list[i];
+		list[i] = list[j];
+		list[j] = tmp;
+	}
+
+	printf("new list:\n");
+	for(i = 0; i < size; i++)
+		printf("%d\t", list[i]);
+	printf("\n");
+}
+
+/*
+ * read a music clip to memory
+ */
+void readSong( unsigned int* song, int size, char* fileName)
+{
+	short int file_handle;
+	int cc;
+	int buf[2];
+	if( openFileInSD( fileName, &file_handle ) == 0)
+	{
+		for(cc = 0; cc < WAV_HEADER_SIZE; cc++)
+			alt_up_sd_card_read( file_handle );
+		printf("file %s opened\n", fileName );
+	}
+	else
+	{
+		printf("failed to open %s\n", fileName );
+		return;
+	}
+
+	for(cc = 0; cc < size; cc++)
+	{
+		buf[0] = alt_up_sd_card_read( file_handle );
+		if( buf[0] < 0 )	//reach eof
+			break;
+		buf[1] = alt_up_sd_card_read( file_handle );
+
+		song[cc] = ((buf[1]<<8)|buf[0]);
+		if( (song[cc] & 0x8000) > 0 )
+			song[cc] = song[cc] | 0xFFFF0000;
+	}
+	closeFileInSD( file_handle );
 }
