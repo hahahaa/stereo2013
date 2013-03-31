@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">PlayButton</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello wooorld!</string>
+    <string name="title_activity_piano">Piano</string>
+    <string name="Do_up">Do</string>
+    <string name="Re">Re</string>
+    <string name="Mi">Mi</string>
+    <string name="Fa">Fa</string>
+    <string name="Sol">Sol</string>
+    <string name="La">La</string>
+    <string name="Ti">Ti</string>  
+    <string name="Do_down">Do</string>  
+    
+</resources>
