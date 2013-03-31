@@ -22,5 +22,9 @@
     <string name="timeColon">:</string>
     <string name="currentTimeMinute">0</string>
     <string name="currentTimeSeconds">00</string>
+    <string name="PlayModeOrder">Normal</string>
+    <string name="PlayModeShuffle">Shuffle</string>
+    <string name="PlayModeRepeatOn">RepeatOne</string>
+    <string name="PlayModeRepeatOff">RepeatList</string>
 
 </resources>

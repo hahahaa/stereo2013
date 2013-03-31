@@ -1,5 +1,8 @@
 package com.example.ece381;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,6 +14,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,14 +27,18 @@ import android.widget.ProgressBar;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 
 
-public class Activity1 extends Activity {
-	
+public class Activity1 extends Activity 
+{
+	/* Set this to true if debugging saving and loading play list and/or rating list*/
+	boolean Debug = false;
 	
 	/* Constants */
 	final static int ONE_BYTE = 1;
+	final static int MAX_BYTES = 255;
 	
 	/* Variables */
 	int songIndex;
@@ -57,15 +65,11 @@ public class Activity1 extends Activity {
 	int portStr;
 	
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		// This call will result in better error messages if you
-		// try to do things in the wrong thread.
+	public void onCreate(Bundle savedInstanceState) 
+	{
 		volume = 4;
 		songIndex = 0;
 		currentSongPositionInTime = 0;
-		
-
-      
 
 		Intent intent = getIntent();
 		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
@@ -87,14 +91,6 @@ public class Activity1 extends Activity {
 		setContentView(R.layout.activity_main);
 		showPlaying = Toast.makeText(this, "", Toast.LENGTH_SHORT);
 		listView = (ListView) findViewById(R.id.listView);
-		
-		// Set up a timer task. We will use the timer to check the
-		// input queue every 500 ms
-		// initializeList(count);
-		// rowView = listView.getChildAt(0);
-		// rowView.setSelected(true);
-		// while(initialized == false);
-		// initializeList(count);
 	}
 
 	@Override
@@ -103,24 +99,6 @@ public class Activity1 extends Activity {
 		return true;
 	}
 
-	// Route called when the user presses "connect"
-	// public void openSocket(View view) {
-	// new SocketSend().execute((Void) null);
-	// }
-	// Called when the user wants to send a message
-	/*
-	 * public void sendMessage(View view) { MyApplication app = (MyApplication)
-	 * getApplication(); // Get the message from the box //EditText et =
-	 * (EditText) findViewById(R.id.MessageText); String msg = "gg"; // Create
-	 * an array of bytes. First byte will be the // message length, and the next
-	 * ones will be the message byte buf[] = new byte[msg.length() + 1]; buf[0]
-	 * = (byte) msg.length(); System.arraycopy(msg.getBytes(), 0, buf, 1,
-	 * msg.length()); // Now send through the output stream of the socket
-	 * OutputStream out; try { out = app.sock.getOutputStream(); try {
-	 * out.write(buf, 0, msg.length() + 1); } catch (IOException e) {
-	 * e.printStackTrace(); } } catch (IOException e) { e.printStackTrace(); } }
-	 */
-	// Called when the user closes a socket
 	public void closeSocket(View view) {
 		MyApplication app = (MyApplication) getApplication();
 		Socket s = app.sock;
@@ -131,7 +109,6 @@ public class Activity1 extends Activity {
 			e.printStackTrace();
 		}
 	}
-
 
 	public void playSong(View view) {
 		new SocketSend().execute("P");
@@ -150,14 +127,12 @@ public class Activity1 extends Activity {
 	}
 
 	public void upVolume(View view) {
-		if (volume < 4)
-			volume++;
+		volume++;
 		new SocketSend().execute("U");
 	}
 
 	public void downVolume(View view) {
-		if (volume > 0)
-			volume--;
+		volume--;
 		new SocketSend().execute("D");
 	}
 
@@ -165,6 +140,225 @@ public class Activity1 extends Activity {
 		new SocketSend().execute("P");
 	}
 	
+	public void onClickPlayOrderMode( View view )
+	{
+		boolean isShuffle = ((ToggleButton) view).isChecked();
+		
+		if ( isShuffle )
+			new SocketSend().execute("H");
+		else
+			new SocketSend().execute("h");
+	}
+	
+	public void onClickPlayRepeatMode( View view )
+	{
+		boolean isRepeatOneSong = ((ToggleButton) view).isChecked();
+		
+		if ( isRepeatOneSong )
+			new SocketSend().execute("R");
+		else
+			new SocketSend().execute("r");
+	}
+	
+	/* Sends a playList to DE2
+	 * returns 0 if successful, otherwise -1
+	 * Pre: playList != null
+	 */
+	public int sendCurrentPlayListToDE2( String[] playList )
+	{
+		MyApplication app = (MyApplication) getApplication();
+		InputStream in = null;
+		try 
+		{
+			in = app.sock.getInputStream();
+		} 
+		catch (IOException e1) 
+		{
+			Log.i( "Exception", "app.sock.getInputStream() failed in sendCurrentPlayListToDE2" );
+			return -1;
+		}
+		
+		int listLength = playList.length;
+		Log.i( "list", "Start sending playList" );
+		new SocketSend().execute( Integer.toString( ( Integer.toString( listLength ) ).length() ) );
+		Log.i( "list", "Sending: " +  Integer.toString( ( Integer.toString( listLength ) ).length() ) );
+		new SocketSend().execute( Integer.toString( listLength ) );
+		Log.i( "list", "Sending: " +  Integer.toString( listLength ) );
+		
+		for ( int i = 0; i < listLength; i++ )
+		{
+			if ( i != 0 && i % 30 == 0 )	// for HandShake
+			{
+				try 
+				{
+					byte buf[] = new byte[ONE_BYTE];
+										
+					new SocketSend().execute( "H" );
+					Log.i( "list", "Sending H" );
+					
+					
+					/* Android loopback mode purpose */
+					/*
+					String msg = new String();
+					while ( msg.compareTo( "H" ) != 0 )
+					{
+						if ( in.available() > 0 )
+						{
+							in.read( buf );
+							msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
+						}
+					}
+					*/
+					
+					/* Real Purpose */
+					while ( in.available() == 0 );
+					Log.i( "list", "Got message from DE2" );
+					
+					in.read( buf );
+					String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
+					
+					Log.i( "list", "Message got is: " + msg );
+					
+					if ( msg.compareTo( "H" ) != 0 )
+					{
+						Log.i( "list", "Invalid message came from DE2 in sendCurrentPlayListToDE2" );
+						return -1;
+					}
+					Log.i( "list", "valid message came from DE2 in sendCurrentPlayListToDE2" );
+				} 
+				catch (IOException e) 
+				{
+					Log.i( "Exception", "IOException failed in sendCurrentPlayListToDE2" );
+					return -1;
+				}		
+			}
+				
+			new SocketSend().execute( Integer.toString( playList[i].length() ) );
+			Log.i( "list", "Sending: " +  Integer.toString( playList[i].length() ) );
+			new SocketSend().execute( playList[i] );
+			Log.i( "list", "Sending: " +  playList[i] );
+		}
+		Log.i( "list", "Done sending playList" );
+		return 0;
+	}
+	
+	/* Wrapper function for storing rating list */
+	public void saveRating( String[] rating )
+	{
+		saveList( "Rating.txt", rating );
+	}
+	
+	/* Wrapper function for loading rating list */
+	public String[] loadRating()
+	{
+		return loadList( "Rating.txt" );
+	}
+	
+	/* Wrapper function for saving play list */
+	public void savePlayList( String name, String[] str )
+	{
+		saveList( name, str );
+	}
+	
+	/* Wrapper function for loading play list */
+	public String[] loadPlayList( String name )
+	{
+		return loadList( name );
+	}
+	
+	/* Stores a list of string into internal storage as a file
+	 * @name is the name of the file
+	 * @str is the list of strings to store
+	 * Pre: Str != null
+	 */
+	public void saveList( String name, String[] str )
+	{
+		FileOutputStream fos = null;
+		
+		try 
+		{
+			fos = openFileOutput( name, Context.MODE_PRIVATE );
+			
+			for ( int i = 0; i < str.length; i++ )
+			{
+				fos.write( str[i].getBytes() );
+				fos.write( ".".getBytes() );
+			}
+		} 
+		catch (FileNotFoundException e) 
+		{
+			Log.i( "Exception", "File: " + name + " is not found." );
+		} 
+		catch (IOException e) 
+		{
+			Log.i( "Exception", "str.getBytes() threw an IOException for file: " + name + "." );
+		}
+		finally
+		{
+			try 
+			{
+				fos.close();
+			} 
+			catch (IOException e) 
+			{
+				Log.i( "Exception", "Failed close file: " + name + "." );
+			}
+		}
+	}
+	
+	/* Loads a list of string from the internal storage
+	 * @name is the name of the file
+	 */
+	public String[] loadList( String name )
+	{
+		FileInputStream fis = null;
+		try 
+		{
+			fis = openFileInput( name );
+			
+			byte[] buf = new byte[MAX_BYTES];
+			String temp = new String();
+			int i;
+			
+			int bytesRead;
+			while ( (bytesRead = fis.read( buf )) != -1 )
+			{
+				Log.i( "playList", "bytesRead is: " + bytesRead );
+				temp = temp.concat( new String( buf, 0, bytesRead, "US-ASCII" ));			
+			}
+			Log.i( "playList", "bytesRead is: " + bytesRead );
+			
+			String[] str = temp.split("\\.");
+			
+			for ( i = 0; i < str.length; i++)
+				Log.i( "ss", "str[" + i + " ]: " + str[i] );
+			
+			return str;
+		} 
+		catch (FileNotFoundException e) 
+		{
+			Log.i( "Exception", "File: " + name + " is not found." );
+		} 
+		catch (IOException e) 
+		{
+			Log.i( "Exception", "fis.read() threw an IOException for file: " + name + "." );
+		}
+		finally
+		{
+			try 
+			{
+				fis.close();
+			} 
+			catch (IOException e) 
+			{
+				Log.i( "Exception", "Failed close file: " + name + "." );
+			}
+		}
+		
+		return null;
+	}
+	
+	/* Debugging purpose */
 	public void debugHandShakedLongMessage(View view) {
 		new SocketSend().execute("M");
 	}
@@ -188,39 +382,12 @@ public class Activity1 extends Activity {
 			mLengths[songCount]	= playlist[iterator + 4];
 			songCount++;
 		}
-		/*
-		 * for(int i=0; i<mSongs.length; i++) { HashMap<String,String> item =
-		 * new HashMap<String,String>(); item.put( "Song", mSongs[i]); item.put(
-		 * "Artist",mArtists[i] ); item.put("Rating"," Rating:"+
-		 * mRatings[i]+" stars"); list.add( item ); } adapter = new
-		 * SimpleAdapter( this, list, R.layout.mylistview1, new String[] {
-		 * "Song","Artist","Rating" }, new int[] { R.id.textView1,
-		 * R.id.textView2, R.id.textView3 }); listView.setAdapter(adapter);
-		 * listView.setOnItemClickListener(new AdapterView.OnItemClickListener()
-		 * {
-		 * 
-		 * @Override public void onItemClick(AdapterView<?> parent, View view,
-		 * int position, long id) { //String song_id =
-		 * Integer.toString(position); Object obj =
-		 * parent.getItemAtPosition(position); //SelectionRectangle block;
-		 * Drawable block = getWallpaper(); listView.setSelector(block);
-		 * //Drawable draw; //draw.
-		 * 
-		 * @SuppressWarnings("unchecked") HashMap<String,String> item =
-		 * (HashMap<String, String>) obj; showPlaying.setText(item.get("Song"));
-		 * showPlaying.show(); new SocketSend().execute(item.get("Song") ); } }
-		 * );
-		 */
 	}
 
-	// This is the Socket Connect asynchronous thread. Opening a socket
-	// has to be done in an Asynchronous thread in Android. Be sure you
-	// have done the Asynchronous Tread tutorial before trying to understand
-	// this code.
-	public class SocketConnect extends AsyncTask<Void, Void, Socket> {
-		// The main parcel of work for this thread. Opens a socket
-		// to connect to the specified IP.
-		protected Socket doInBackground(Void... voids) {
+	public class SocketConnect extends AsyncTask<Void, Void, Socket> 
+	{
+		protected Socket doInBackground(Void... voids) 
+		{
 			Socket s = null;
 			String ip = ipStr;
 			Integer port = portStr;
@@ -234,15 +401,11 @@ public class Activity1 extends Activity {
 			return s;
 		}
 
-		// After executing the doInBackground method, this is
-		// automatically called, in the UI (main) thread to store
-		// the socket in this app's persistent storage
-		protected void onPostExecute(Socket s) {
+		protected void onPostExecute(Socket s)
+		{
 			MyApplication myApp = (MyApplication) Activity1.this
 					.getApplication();
 			myApp.sock = s;
-			// new
-			// SocketSend().execute("02.01.Super MArio.kai.5.02.LOL.new artist.4.");
 
 			try {
 				Log.i( "Prog", "Clearing UART" );
@@ -258,26 +421,20 @@ public class Activity1 extends Activity {
 				e.printStackTrace();
 			}
 
-			new SocketSend().execute("playlist");
+			if ( !Debug )
+				new SocketSend().execute("playlist");
 		}
 	}
 
 	public class SocketSend extends AsyncTask<String, String, Socket> {
-		// The main parcel of work for this thread. Opens a socket
-		// to connect to the specified IP.
 		protected Socket doInBackground(String... strings) {
 			Socket s = null;
 			MyApplication app = (MyApplication) getApplication();
-			// rowView.setSelected(true);
 			String msg = strings[0].toString();
-			// Toast.makeText(MainActivity.this, msg,
-			// Toast.LENGTH_SHORT).show();
-			// Create an array of bytes. First byte will be the
-			// message length, and the next ones will be the message
 			byte buf[] = new byte[msg.length() + 1];
 			buf[0] = (byte) msg.length();
 			System.arraycopy(msg.getBytes(), 0, buf, 1, msg.length());
-			// Now send through the output stream of the socket
+
 			OutputStream out;
 			try {
 				out = app.sock.getOutputStream();
@@ -293,17 +450,14 @@ public class Activity1 extends Activity {
 		}
 	}
 
-	// This is a timer Task. Be sure to work through the tutorials
-	// on Timer Tasks before trying to understand this code.
 	public class TCPReadTimerTask extends TimerTask 
-	{
+	{		
 		public void run() 
 		{
-			//Log.i("Prog", "Read Timer Task started");
+			Log.i("Prog", "Read Timer Task started");
 
 			MyApplication app = (MyApplication) getApplication();
-			if (app.sock != null && app.sock.isConnected()
-					&& !app.sock.isClosed()) 
+			if (app.sock != null && app.sock.isConnected() && !app.sock.isClosed()) 
 			{
 				try 
 				{
@@ -393,17 +547,17 @@ public class Activity1 extends Activity {
 						final String message = new String( data );
 
 						Log.i("HandShake", "String s is: " + command);
-
-						// As explained in the tutorials, the GUI can not be
-						// updated in an asyncrhonous task. So, update the GUI
-						// using the UI thread.
+						if (msg.compareTo("M") == 0)
+						{
+							Log.i("Shuffle", "String data is: " + data);
+							Log.i("Shuffle", "String message is: " + message);
+						}
+						
+						
 						runOnUiThread(new Runnable() 
 						{
 							public void run() 
-							{
-//							      Intent intent = getIntent();
-//							      String ipStr_ = intent.getStringExtra("ipStr+");
-								
+							{								
 								Log.i("Prog", "Started Run On UI Thread");
 
 								TextView volumeT = (TextView) findViewById(R.id.viewText1);
@@ -444,11 +598,13 @@ public class Activity1 extends Activity {
 								{
 									volumeT.setText("Volume = " + Integer.toString(volume));
 								} 
+								/* Deprecated */
 								else if (command.compareTo("N") == 0) 
 								{
 									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
 									pb.setProgress( 0 );
-								} 
+								}
+								/* Deprecated */
 								else if (command.compareTo("L") == 0) 
 								{
 									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
@@ -472,7 +628,8 @@ public class Activity1 extends Activity {
 								{
 									Log.i( "HandShake", "Successfully reached here" );
 									
-									Log.i("Prog", "s I have in Else is: " + command);
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									pb.setProgress( 0 );
 									
 									songIndex = Integer.parseInt( message );
 									Log.i("indexNumber", Integer.toString(songIndex));
@@ -481,26 +638,53 @@ public class Activity1 extends Activity {
 									setupTime( Integer.parseInt( mLengths[songIndex] ) );
 									currentSongPositionInTime = 0;
 								} 
-								else // to be modified
+								else
 								{
-									/*
-									Log.i("Prog", "s I have in Else is: " + command);
 									
-									songIndex = Integer.parseInt(s);
-									Log.i("indexNumber", Integer.toString(songIndex));
-									text.setText("Playing: " + mSongs[songIndex]);
-									
-									setupTime( Integer.parseInt( mLengths[songIndex] ) );
-									currentSongPositionInTime = 0;
-									*/
 								}
-								// if(rowView!=null)
-								// rowView.setSelected(true);
-								
-//							      Intent intent = getIntent();
-//							      String ipStr_ = intent.getStringExtra("ipStr+");
 							}
 						});
+					}
+					
+					/* Debugging purpose */
+					if ( Debug )
+					{
+						String[] list = new String[100];
+						for ( int i = 0; i < 100; i++ )
+						{
+							list[i] = Integer.toString( i );
+						}
+						
+						/* playlist */
+						Log.i( "list", "Before save playList" );
+						savePlayList( "playList.txt", list );
+						Log.i( "list", "After save playList and Before load PlayList" );
+						
+						list = loadPlayList( "playList.txt" );
+						Log.i( "list", "After Load playList" );
+						
+						for ( int i = 0; i < list.length; i++ )
+							Log.i( "list", list[i] );
+						
+						sendCurrentPlayListToDE2( list );
+						
+						/* rating */
+						for ( int i = 0; i < 100; i++ )
+						{
+							list[i] = Integer.toString( 99-i );
+						}
+						
+						Log.i( "list", "Before save saveRating" );
+						saveRating( list );
+						Log.i( "list", "After save saveRating and Before load saveRating" );
+						
+						list = loadRating( );
+						Log.i( "list", "After Load saveRating" );
+						
+						for ( int i = 0; i < list.length; i++ )
+							Log.i( "list", list[i] );
+						
+						Debug = false;
 					}
 				} 
 				catch (IOException e) 

@@ -75,21 +75,36 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="left"
                     android:onClick="nextSong"
-                    android:text="Next" />
+                    android:text="Next"
+ 					android:textSize="12sp" />
 
                 <Button
                     android:id="@+id/button7"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:onClick="prevSong"
-                    android:text="Prev" />
+                    android:text="Prev"
+                    android:textSize="12sp" />
 
-                <Button
-                    android:id="@+id/button8"
+                <ToggleButton
+                    android:id="@+id/toggleButton1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:onClick="debugHandShakedLongMessage"
-                    android:text="DEBUG" />
+                    android:onClick="onClickPlayOrderMode"
+                    android:text="@string/PlayModeOrder"
+                    android:textOff="@string/PlayModeOrder"
+                    android:textOn="@string/PlayModeShuffle"
+                    android:textSize="12sp" />
+
+                <ToggleButton
+                    android:id="@+id/toggleButton2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:onClick="onClickPlayRepeatMode"
+                    android:text="@string/PlayModeRepeatOff"
+                    android:textOff="@string/PlayModeRepeatOff"
+                    android:textOn="@string/PlayModeRepeatOn"
+                    android:textSize="12sp" />
 
             </LinearLayout>
 
