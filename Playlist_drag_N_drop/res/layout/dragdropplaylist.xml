@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1" >
+
+        <LinearLayout
+            android:id="@+id/sourcelayout"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical" >
+            
+            <TextView
+                android:id="@+id/textView1"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="All Songs"
+                android:textSize="30sp" />
+            
+            <ListView
+	            android:id="@+id/listView1"
+	            android:layout_width="fill_parent"
+	            android:layout_height="wrap_content" />
+            
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/targetlayout"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical" >
+            
+            <TextView
+                android:id="@+id/textView2"
+               android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="New list "
+                android:textSize="30sp" />
+            
+            <ListView
+	            android:id="@+id/listView2"
+	            android:layout_width="fill_parent"
+	            android:layout_height="wrap_content" />
+	            
+        </LinearLayout>
+        
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <EditText
+            android:id="@+id/editText1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ems="10" />
+
+        <Button
+            android:id="@+id/button1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="sendList"
+            android:text="Send " />
+
+    </LinearLayout>
+
+</LinearLayout>

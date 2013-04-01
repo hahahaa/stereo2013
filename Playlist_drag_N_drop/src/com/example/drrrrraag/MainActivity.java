@@ -1,6 +1,8 @@
 package com.example.drrrrraag;
+
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -20,49 +22,71 @@ import android.view.View.DragShadowBuilder;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SimpleAdapter;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class MainActivity extends Activity {
 
-	private ArrayList<HashMap<String, String>> allSonglist;
-	private ArrayList<HashMap<String, String>> newSongList;
+	private ArrayList<HashMap<String, String>> allSonglist;	// input from the caller
+	private ArrayList<HashMap<String, String>> newSongList;	// send this to middle man
+	private List<String> droppedList;	// a list for displaying songs in newSongList
+	
 	private ListView listSource;
 	private ListView listTarget;
 	private LinearLayout targetLayout;
-	private ArrayAdapter<HashMap<String, String>> targetAdapter;
-
-
+	private ArrayAdapter<String> targetAdapter;
+	
+	private EditText nameEdit;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.playlist);
+		setContentView(R.layout.dragdropplaylist);
 		listSource = (ListView) findViewById(R.id.listView1);
 		listTarget = (ListView) findViewById(R.id.listView2);
 		targetLayout = (LinearLayout)findViewById(R.id.targetlayout);
+		nameEdit = (EditText)findViewById(R.id.editText1);
 
-		allSonglist = gethardCodedList();
+		allSonglist = gethardCodedList();	// TODO remove it
 		newSongList = new ArrayList<HashMap<String, String>>();
 
 		listSource.setTag("listSource");
 		listTarget.setTag("listTarget");
 		targetLayout.setTag("targetLayout");
-
-		listSource.setAdapter(new ArrayAdapter<HashMap<String, String>>(this,
-				android.R.layout.simple_list_item_1, allSonglist));
+		
+		listSource.setAdapter(new SimpleAdapter( this, allSonglist, R.layout.dragdropsourcelistview, new String[] { "Song","Artist" },
+				new int[] { R.id.textView1, R.id.textView2}));
+		
 		listSource.setOnItemLongClickListener(new sourceListItemLongClickListener());
 		listTarget.setOnItemLongClickListener(new targetListItemLongClickListener());
-
-		targetAdapter = new ArrayAdapter<HashMap<String, String>>(this,
-				android.R.layout.simple_list_item_1, newSongList);
+		
+		droppedList = new ArrayList<String>();			
+		targetAdapter = new ArrayAdapter<String>(this,
+	              android.R.layout.simple_list_item_1, droppedList);
+		
 		listTarget.setAdapter(targetAdapter);
 
 		listSource.setOnDragListener(new MyDragEventListener());
 		targetLayout.setOnDragListener(new MyDragEventListener());
 
 	}
-
+	
+	/**
+	 * send the created list
+	 */
+	public void sendList (View view) {
+		if(!newSongList.isEmpty()) {
+			// TODO	send newSongList	newSongList only contain the song name and artist name
+			// TODO do sth with the listName
+			String listName = nameEdit.getEditableText().toString();
+			if(listName.compareTo("") == 0)
+				listName = "newlist1";
+		}
+	}
+	
 	private static class MyDragShadowBuilder extends View.DragShadowBuilder {
 		private static Drawable shadow;
 
@@ -105,7 +129,7 @@ public class MainActivity extends Activity {
 
 			v.startDrag(dragData, //ClipData
 					myShadow,  //View.DragShadowBuilder
-					allSonglist.get(position),  //Object myLocalState
+					position,  //Object myLocalState
 					0);    //flags
 			return true;
 		}
@@ -113,21 +137,18 @@ public class MainActivity extends Activity {
 	
 	class targetListItemLongClickListener implements OnItemLongClickListener {
 		@Override
-		public boolean onItemLongClick(AdapterView<?> l, View v,
-				int position, long id) {
-			Log.i("drag","targetListItemLongClickListener");
-			Log.i("drag", newSongList.get(position).toString());
-			
+		public boolean onItemLongClick(AdapterView<?> l, View v, int position, long id) {		
+			droppedList.remove(position);
 			newSongList.remove(position);
 			targetAdapter.notifyDataSetChanged();
-						
+			
 			Log.i("drag", "size of new list: " + newSongList.size());
+			Log.i("drag", newSongList.toString());
 			return true;
 		}
 	}
 
 	protected class MyDragEventListener implements View.OnDragListener {
-
 		@Override
 		public boolean onDrag(View v, DragEvent event) {
 			final int action = event.getAction();
@@ -136,60 +157,46 @@ public class MainActivity extends Activity {
 			case DragEvent.ACTION_DRAG_STARTED:
 				//All involved view accept ACTION_DRAG_STARTED for MIMETYPE_TEXT_PLAIN
 				if (event.getClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)) {
-					commentMsg = v.getTag() + " : ACTION_DRAG_STARTED accepted.";
-					Log.i("drag", commentMsg);
 					return true; //Accept
-				}else{
-					commentMsg = v.getTag() + " : ACTION_DRAG_STARTED rejected.";
-					Log.i("drag", commentMsg);
+				} else {
 					return false; //reject
 				}
 			case DragEvent.ACTION_DRAG_ENTERED:
-				commentMsg = v.getTag() + " : ACTION_DRAG_ENTERED.";
-				Log.i("drag", commentMsg);
 				return true;
 			case DragEvent.ACTION_DRAG_LOCATION:
-				commentMsg = v.getTag() + " : ACTION_DRAG_LOCATION - " + event.getX() + " : " + event.getY();
-				Log.i("drag", commentMsg);
 				return true;
 			case DragEvent.ACTION_DRAG_EXITED:
-				commentMsg = v.getTag() + " : ACTION_DRAG_EXITED.";
-				Log.i("drag", commentMsg);
 				return true;
 			case DragEvent.ACTION_DROP:
-				// Gets the item containing the dragged data
-				ClipData.Item item = event.getClipData().getItemAt(0);
-
-				commentMsg = v.getTag() + " : ACTION_DROP";
-				Log.i("drag", commentMsg);
-
 				//If apply only if drop on buttonTarget
-				if(v == targetLayout){
-					String droppedItem = item.getText().toString();
+				if(v == targetLayout) {
+					int position = (Integer) event.getLocalState();
+					
 					HashMap<String, String> song = new HashMap<String, String>();
-					song.put("string", droppedItem);
+					song.put("Song", allSonglist.get(position).get("Song"));
+					song.put("Artist", allSonglist.get(position).get("Artist"));
 					newSongList.add(song);
 					
+					String tmp = song.get("Song") + "\n" + song.get("Artist");
+					droppedList.add(tmp);
 					targetAdapter.notifyDataSetChanged();
 					
 					commentMsg = "Dropped item";
 					Log.i("drag", commentMsg);
 					return true;
-				}else{
+				}else {
 					return false;
 				}
-
-
 			case DragEvent.ACTION_DRAG_ENDED:
 				if (event.getResult()){
 					commentMsg = v.getTag() + " : ACTION_DRAG_ENDED - success." + " size of new list: " + newSongList.size();
 					Log.i("drag", commentMsg);
+					Log.i("drag", newSongList.toString());
 
 				} else {
 					commentMsg = v.getTag() + " : ACTION_DRAG_ENDED - fail.";
 					Log.i("drag", commentMsg);
-
-				};
+				}
 				return true;
 			default: //unknown case
 				commentMsg = v.getTag() + " : UNKNOWN !!!";
@@ -200,7 +207,7 @@ public class MainActivity extends Activity {
 			}
 		} 
 	}
-
+	
 	private ArrayList<HashMap<String, String>> gethardCodedList() {
 		ArrayList<HashMap<String, String>> lis = new ArrayList<HashMap<String, String>>();
 
