@@ -33,7 +33,7 @@ public class MainActivity extends Activity
     {
     	 //ipStr = ipEdit.getEditableText().toString();
     	 //portStr = portEdit.getEditableText().toString();
-    	ipStr = "192.168.1.70";
+    	ipStr = "206.87.117.1";
     	portStr = "50002";
 		
 		infoText.setText("IP entered: " + ipStr + "\n Port entered: " + portStr);

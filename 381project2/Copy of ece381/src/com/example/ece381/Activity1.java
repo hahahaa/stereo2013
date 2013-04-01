@@ -34,7 +34,7 @@ import android.widget.ToggleButton;
 public class Activity1 extends Activity 
 {
 	/* Set this to true if debugging saving and loading play list and/or rating list*/
-	boolean Debug = false;
+	boolean Debug = true;
 	
 	/* Constants */
 	final static int ONE_BYTE = 1;
@@ -180,8 +180,8 @@ public class Activity1 extends Activity
 		
 		int listLength = playList.length;
 		Log.i( "list", "Start sending playList" );
-		new SocketSend().execute( Integer.toString( ( Integer.toString( listLength ) ).length() ) );
-		Log.i( "list", "Sending: " +  Integer.toString( ( Integer.toString( listLength ) ).length() ) );
+		//new SocketSend().execute( Integer.toString( ( Integer.toString( listLength ) ).length() ) );
+		//Log.i( "list", "Sending: " +  Integer.toString( ( Integer.toString( listLength ) ).length() ) );
 		new SocketSend().execute( Integer.toString( listLength ) );
 		Log.i( "list", "Sending: " +  Integer.toString( listLength ) );
 		
@@ -233,8 +233,8 @@ public class Activity1 extends Activity
 				}		
 			}
 				
-			new SocketSend().execute( Integer.toString( playList[i].length() ) );
-			Log.i( "list", "Sending: " +  Integer.toString( playList[i].length() ) );
+			//new SocketSend().execute( Integer.toString( playList[i].length() ) );
+			//Log.i( "list", "Sending: " +  Integer.toString( playList[i].length() ) );
 			new SocketSend().execute( playList[i] );
 			Log.i( "list", "Sending: " +  playList[i] );
 		}
