@@ -515,18 +515,43 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			float yVelocity) {
 		showStatus.setText("Fling detected");
 		showStatus.show();
-		if (start.getRawX() < finish.getRawX()){
+		float minHorizontalDistance = 100;
+		float minVerticalDistance = 150;
+		float initialX = start.getRawX();
+		float finalX = finish.getRawX();
+		float initialY = start.getRawY();
+		float finalY = finish.getRawY();
+		
+		if (initialX < finalX && (finalX - initialX) >= minHorizontalDistance )
+		{
 			showStatus.setText("Right fling detected, Next!");
 			showStatus.show();
 			nextSong();
 			return true;
 		}
-		if (start.getRawX() > finish.getRawX()){
+		
+		if (initialX > finalX && (initialX - finalX) >= minHorizontalDistance )
+		{
 			showStatus.setText("Left fling detected, Prev!");
 			showStatus.show();
 			prevSong();
 			return true;
 		}
+		
+		if (initialY < finalY && (finalY - initialY) >= minVerticalDistance )
+		{
+			showStatus.setText("Downward fling detected, Advanced!");
+			showStatus.show();
+			return true;
+		}
+		
+		if (initialY > finalY && (initialY - finalY) >= minVerticalDistance )
+		{
+			showStatus.setText("Upward fling detected, Simple!");
+			showStatus.show();
+			return true;
+		}
+		
 		return false;
 	}
 
@@ -852,7 +877,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	{
 		showStatus.setText("Opening advanced playlist");
 		showStatus.show();
-		Intent intent = new Intent(this, LoadingScreenActivity.class);
+		Intent intent = new Intent(this, AdvancedMainActivity.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);
 		startActivity(intent);
 	}

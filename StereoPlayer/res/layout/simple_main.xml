@@ -19,7 +19,7 @@
             android:id="@+id/volume"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:scaleType="center"
+            android:scaleType="centerInside"
             android:src="@drawable/volumev3"
             android:layout_marginLeft="-30dp" />
         
@@ -83,7 +83,7 @@
             android:layout_marginLeft="75dp"
             android:layout_marginRight="75dp"
             android:max="100"
-            android:minHeight="10dp"
+            android:minHeight="15dp"
             android:progress="50"
             android:progressDrawable="@drawable/progress_bar2" />
 
