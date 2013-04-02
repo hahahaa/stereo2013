@@ -42,7 +42,8 @@ const int KEYS = 0x00002440;
 //#define SONG_SIZE 16384
 #define WAV_HEADER_SIZE 44
 #define SAMPLE_SIZE 96
-#define MIX_SONG_SIZE 690000
+//#define MIX_SONG_SIZE 690000
+#define MIX_SONG_SIZE 28000
 
 volatile int volume;
 volatile int stop_flag;
@@ -51,8 +52,17 @@ volatile int read_index;
 volatile unsigned int stream[SONG_SIZE];
 volatile int isOneSec;
 volatile int mix_index;
-volatile unsigned int Mix1[MIX_SONG_SIZE];
-volatile unsigned int Mix2[MIX_SONG_SIZE];
+
+/* Piano tones */
+volatile unsigned int A3[MIX_SONG_SIZE];
+volatile unsigned int B3[MIX_SONG_SIZE];
+volatile unsigned int C3[MIX_SONG_SIZE];
+volatile unsigned int C4[MIX_SONG_SIZE];
+volatile unsigned int D3[MIX_SONG_SIZE];
+volatile unsigned int E3[MIX_SONG_SIZE];
+volatile unsigned int F3[MIX_SONG_SIZE];
+volatile unsigned int G3[MIX_SONG_SIZE];
+volatile unsigned int* mixSong;
 volatile int mix_flag;
 volatile int isListChanged;
 
@@ -130,14 +140,15 @@ int updateStateWhilePlaying( int prevState );
 int updateState( int prevState );
 
 /* Mixing */
-void readSong( unsigned int* song, int size, char* fileName );
+void readSong( volatile unsigned int* song, int size, char* fileName );
+void playPiano();
 
 int main()
 {
 	initialization();
 
 	volume = 4;
-	currSong = 3;
+	currSong = 0;
 
 	stop_flag = 0;
 	repeat_flag = 0;
@@ -157,14 +168,28 @@ int main()
 	alt_up_character_lcd_string(char_lcd_dev, "READING SD CARD ");
 
 	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
-	readSong( Mix1, MIX_SONG_SIZE, "M1.wav");
-	readSong( Mix2, MIX_SONG_SIZE, "M2.wav");
+	readSong( A3, MIX_SONG_SIZE, "A3.wav");
+	readSong( B3, MIX_SONG_SIZE, "B3.wav");
+	readSong( C3, MIX_SONG_SIZE, "C3.wav");
+	readSong( C4, MIX_SONG_SIZE, "C4.wav");
+	readSong( D3, MIX_SONG_SIZE, "D3.wav");
+	readSong( E3, MIX_SONG_SIZE, "E3.wav");
+	readSong( F3, MIX_SONG_SIZE, "F3.wav");
+	readSong( G3, MIX_SONG_SIZE, "G3.wav");
+	mixSong = A3;
 
-	IORD_8DIRECT(leds, 0xFF);
+	// initialize the playlist
+	playList = malloc(numSongs * sizeof(int));
+	int k;
+	for(k = 0; k < numSongs; k++)
+		playList[k] = k;
+
+	IOWR_8DIRECT(leds, 0, 0xFF);
 
 	alt_up_character_lcd_init(char_lcd_dev);
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 	alt_up_character_lcd_string(char_lcd_dev, "MIDDLEMAN       ");
+	printf("waiting for middleman\n");
 
 	char sw = IORD_8DIRECT(SWITCHES, 0);
 	if(sw == 0)
@@ -175,20 +200,17 @@ int main()
 		message = getWordFromMiddleMan();
 		printf( "%s.\n", message );
 		if( strcmp(message, "playlist") != 0)
-			printf("receving sth else %s\n", message);
+			printf("receving sth else: | %s |\n", message);
 		free(message);
 		sendSongListToMiddleMan( songDetailList, numSongs );
 	}
+
+	IOWR_8DIRECT(leds, 0, 0);
 
 	int cc;
 	for(cc = 0; cc < numSongs; cc++)
 		printf("%s\t", songDetailList[cc]->id );
 	printf("\n");
-
-	playList = malloc(numSongs * sizeof(int));
-	for(cc = 0; cc < numSongs; cc++)
-		playList[cc] = cc;
-	playListSize = numSongs;
 
 	srand(cc);	//TODO: random number generator
 	//shufflePlayList( playList, numSongs );
@@ -221,16 +243,7 @@ int main()
  */
 int updateState( int prevState )
 {
-	char sw = IORD_8DIRECT(SWITCHES, 0);
-	if(sw == 2)
-		mix_flag = 1;
-	else if(sw == 3)
-		mix_flag = 2;
-	else
-	{
-		mix_index = 0;
-		mix_flag = 0;
-	}
+	playPiano();
 
 	int returnState = prevState;
 	if( prevState == STOP )
@@ -334,6 +347,7 @@ int updateStateFromUART( int prevState )
 		shuffle_flag = 0;
 		isListChanged = 1;
 	}
+
 	free(temp);
 	return state;
 }
@@ -510,20 +524,13 @@ void audio_isr (void * context, unsigned int irq_id)
 
 		if(mix_flag == 1)
 		{
-			song_sample[cc] = song_sample[cc] + Mix1[mix_index];
+			song_sample[cc] = song_sample[cc] + mixSong[mix_index];
 			mix_index++;
 			if(mix_index == MIX_SONG_SIZE)
 				mix_index = 0;
 			song_sample[cc] = song_sample[cc]>>1;
 		}
-		else if(mix_flag == 2)
-		{
-			song_sample[cc] = song_sample[cc] + Mix2[mix_index];
-			mix_index++;
-			if(mix_index == MIX_SONG_SIZE)
-				mix_index = 0;
-			song_sample[cc] = song_sample[cc]>>1;
-		}
+
 		play_index++;
 		if(play_index == SONG_SIZE)
 		{
@@ -542,16 +549,7 @@ void audio_isr (void * context, unsigned int irq_id)
 			song_sample[cc] = 0;
 		else
 		{
-			//if(song_sample[cc] >= 0x800000)
-			//	song_sample[cc] = (song_sample[cc]>>volume)|0xE00000;
-			//else
-			//	song_sample[cc] = song_sample[cc]>>volume;
-			//int i;
-			//for(i = 0; i < volume; i++)
-			//	if(song_sample[cc] >= 0x800000)
-			//		song_sample[cc] = (song_sample[cc]>>1)|0x800000;
-			//	else
-			//		song_sample[cc] = song_sample[cc]>>1;
+
 			song_sample[cc] = song_sample[cc] << volume;
 		}
 		//song_sample[cc] = song_sample[cc] & 0x00FFFFFF;	//try this
@@ -621,7 +619,6 @@ int playSong( short int file_handle, int currState)
 
 		if(eof == 1)	// done
 		{
-			//printf("eof %d %d\n", read_index, play_index);
 			while(stop_flag == 1);
 			return PLAYING_NORMAL;
 		}
@@ -633,7 +630,6 @@ int playSong( short int file_handle, int currState)
 			buf[0] = alt_up_sd_card_read( file_handle );
 			if( buf[0] < 0 )	//reach eof
 			{
-				//printf("reached eof\n");
 				eof = 1;
 				stop_flag = 1;
 				continue;
@@ -654,8 +650,6 @@ int playSong( short int file_handle, int currState)
 			{
 				sendStringToMiddleMan( "O" );
 				isOneSec = 0;
-				//time++;
-				//printf("%d\n", time);
 			}
 		}
 	}
@@ -777,13 +771,21 @@ void receivePlayListFromMiddleMan( int* playList, int* size )
 	for ( i = 0; i < numToReceive; i++ )
 	{
 		buffer = getWordFromMiddleMan();
+		if ( strcmp( buffer, "H" ) == 0 )
+		{
+			sendStringToMiddleMan( "H" );
+			i--;
+			continue;
+		}
+
 		playList[i] = atoi( buffer );
 		free( buffer );
-		printf( "playList[i] received is: %d\n", playList[i] );
+		printf( "playList[%d] received is: %d\n", i, playList[i] );
 	}
 	printf( "Done Receiving play list from MiddleMan\n" );
 
 	*size = i;
+	currSong = 0;
 	free( buffer );
 }
 
@@ -905,7 +907,6 @@ char* getWordFromMiddleMan()
 		str[i] = getByteFromMiddleMan();
 	}
 	str[i] = '\0';
-
 	return str;
 }
 
@@ -948,12 +949,8 @@ char openFileInSD( char* fileName, short int* file_handle_ptr )
 
 	if ( alt_up_sd_card_is_Present() )
 	{
-		//printf("SD Card connected.\n");	// debugging purpose
-
 		if ( alt_up_sd_card_is_FAT16() )
 		{
-			//printf("FAT16 file system detected.\n"); // debugging purpose
-
 			file_handle = alt_up_sd_card_fopen( fileName, false );
 			if ( file_handle == -1 )
 				printf( "Error: File could not be opened.\n" );
@@ -1039,7 +1036,7 @@ SongDetail** getListOfSongDetails( int *numSong )
 		}
 
 		// Debugging purpose
-		printf( "Song: %s(sizeOfID: %d) %s %s %s %s\n", songList[i]->id, (int)strlen( songList[i]->id ), songList[i]->name, songList[i]->artist, songList[i]->rating, songList[i]->time );
+		printf( "Song: %s %s %s %s %s\n", songList[i]->id, songList[i]->name, songList[i]->artist, songList[i]->rating, songList[i]->time );
 	}
 
 	closeFileInSD( file_handle );
@@ -1112,7 +1109,6 @@ char readWordFromSD( char* name, const int length, short int file_handle )
 	while ( ch != -1 && ch != '.' )
 	{
 		name[i++] = ch;
-		//printf( "%c", ch );	// debugging purpose
 
 		if ( i > length )
 		{
@@ -1130,7 +1126,6 @@ char readWordFromSD( char* name, const int length, short int file_handle )
 	}
 
 	name[i] = '\0';
-	//printf( "." ); // debugging purpose
 
 	return 0;
 }
@@ -1194,7 +1189,7 @@ void shufflePlayList( int* list, int size )
 /*
  * read a music clip to memory
  */
-void readSong( unsigned int* song, int size, char* fileName)
+void readSong( volatile unsigned int* song, int size, char* fileName)
 {
 	short int file_handle;
 	int cc;
@@ -1223,4 +1218,33 @@ void readSong( unsigned int* song, int size, char* fileName)
 			song[cc] = song[cc] | 0xFFFF0000;
 	}
 	closeFileInSD( file_handle );
+}
+
+/**
+ * play piano from switches
+ */
+void playPiano()
+{
+	unsigned char sw = IORD_8DIRECT(SWITCHES, 0);
+	if(sw == 1)
+		mixSong = A3;
+	else if(sw == 2)
+		mixSong = B3;
+	else if(sw == 4)
+		mixSong = C3;
+	else if(sw == 8)
+		mixSong = C4;
+	else if(sw == 16)
+		mixSong = D3;
+	else if(sw == 32)
+		mixSong = E3;
+	else if(sw == 64)
+		mixSong = F3;
+	else if(sw == 0x80)
+		mixSong = G3;
+	else {
+		mix_flag = 0;
+		return;
+	}
+	mix_flag = 1;
 }
