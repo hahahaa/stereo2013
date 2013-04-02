@@ -55,7 +55,6 @@ public class LoadingScreenActivity  extends Activity {
 				Log.i("flow", "SocketConnect: IOException" );
 			}
 			Log.i("flow", "SocketConnect: returning from doInBackground" );
-			//cc.notifyAll();
 			return s;
 		}
 
@@ -67,7 +66,6 @@ public class LoadingScreenActivity  extends Activity {
 			Log.i("flow", "SocketConnect: onPostExecute" );
 			MyApplication myApp = (MyApplication) LoadingScreenActivity.this.getApplication();
 			myApp.sock = s;
-			//sock = s;
 
 			try {
 				Log.i( "Prog", "Clearing UART" );
@@ -75,7 +73,6 @@ public class LoadingScreenActivity  extends Activity {
 				InputStream in = s.getInputStream();
 				int bytes_avail = in.available();
 				if (bytes_avail > 0) {
-					// If so, read them in and create a string
 					byte buf[] = new byte[bytes_avail];
 					in.read(buf);
 
@@ -87,11 +84,6 @@ public class LoadingScreenActivity  extends Activity {
 			
 			Log.i("flow", "SocketConnect: Sending command playlist" );
 			myApp.new SocketSend().execute("playlist");
-
-			//if(mode == DE2)
-			//	new SocketSend().execute("playlist");
-			//else
-			//	new SocketSend().execute("02.01.Super MArio.kai.5.64.02.LOL.new artist.4.22.");
 		}
 	}
 	
@@ -259,7 +251,7 @@ public class LoadingScreenActivity  extends Activity {
 							{								
 								Log.i("Prog", "Started Run On UI Thread");
 
-								if (initialized == false) 
+								if ( !initialized ) 
 								{
 									Log.i("Prog", "Initializing Song List");
 
@@ -271,8 +263,6 @@ public class LoadingScreenActivity  extends Activity {
 									String[] playlist = buffer;
 									int count = Integer.parseInt(buffer[0]);
 									initializeList(count, playlist);
-									initialized = true;
-									
 									
 									Intent resultIntent = new Intent();
 									resultIntent.putExtra("FromLoading", mainPlaylist);
