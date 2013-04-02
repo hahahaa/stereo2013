@@ -310,8 +310,15 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		switch(requestCode) { 
 		case (loading) : { 
 			if (resultCode == Activity.RESULT_OK) { 
-				String newText = data.getStringExtra("FromLoading");
-				Toast.makeText(this, newText, Toast.LENGTH_SHORT).show();
+				
+				String[] playlist = data.getStringArrayExtra("FromLoading");
+				
+				for (int i= 0; i < playlist.length; i++)
+				{
+					Log.i("inside", playlist[i]);
+				}
+				
+				//Toast.makeText(this, newText, Toast.LENGTH_SHORT).show();
 			} 
 			break; 
 		} 
