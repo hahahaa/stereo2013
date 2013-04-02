@@ -309,7 +309,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	private int mode;
 	private int songIndex;
 	private MyApplication app;
-	private int currentSongPositionInTime;
+	private double currentSongPositionInTime;
 
 	@SuppressLint("ShowToast")
 	@Override
@@ -383,10 +383,14 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar1);
 			bar.setAlpha(1);
 			bar.startAnimation(fadeOutAnimation);
- 			if (songVolume > 0) songVolume--;
- 			updateVolume();
- 			showStatus.setText("Volume = " + Integer.toString(songVolume));
-			showStatus.show();
+ 			if (songVolume > 0) {
+ 				songVolume--;
+ 				updateVolume();
+ 	 			showStatus.setText("Volume = " + Integer.toString(songVolume));
+ 				showStatus.show();
+ 				upVolume();
+ 			}
+ 			
 			return true;
 		} 
 		else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP){
@@ -399,10 +403,13 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar1);
 			bar.setAlpha(1);
 			bar.startAnimation(fadeOutAnimation);
-			if (songVolume < 8) songVolume++;
-			updateVolume();
-			showStatus.setText("Volume = " + Integer.toString(songVolume));
-			showStatus.show();
+			if (songVolume < 8){
+				songVolume++;
+				updateVolume();
+				showStatus.setText("Volume = " + Integer.toString(songVolume));
+				showStatus.show();
+				downVolume();
+			}
 
 			return true;
 		}
@@ -518,11 +525,13 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		if (start.getRawX() < finish.getRawX()){
 			showStatus.setText("Right fling detected, Next!");
 			showStatus.show();
+			nextSong();
 			return true;
 		}
 		if (start.getRawX() > finish.getRawX()){
 			showStatus.setText("Left fling detected, Prev!");
 			showStatus.show();
+			prevSong();
 			return true;
 		}
 		return false;
@@ -606,21 +615,19 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		app.new SocketSend().execute("S");
 	}
 
-	public void nextSong(View view) {
+	public void nextSong() {
 		app.new SocketSend().execute("N");
 	}
 
-	public void prevSong(View view) {
+	public void prevSong() {
 		app.new SocketSend().execute("L");
 	}
 
-	public void upVolume(View view) {
-		songVolume++;
+	public void upVolume() {
 		app.new SocketSend().execute("U");
 	}
 
-	public void downVolume(View view) {
-		songVolume--;
+	public void downVolume() {
 		app.new SocketSend().execute("D");
 	}
 	
