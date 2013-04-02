@@ -310,6 +310,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	private int songIndex;
 	private MyApplication app;
 	private double currentSongPositionInTime;
+	private Timer tcp_timer;
 
 	@SuppressLint("ShowToast")
 	@Override
@@ -330,11 +331,6 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		
 		MyApplication myApp = (MyApplication)SimpleMainActivity.this.getApplication();
 		app = myApp;
-		//app.ipStr = ipStr;
-		//app.portNumber = portNumber;
-		
-		
-		//new SocketConnect().execute((Void) null);
 		
 		if (mainPlaylist == null )
 		{
@@ -343,10 +339,6 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			startActivityForResult(intent, loading);
 		}
 		
-		
-		//Intent intent = new Intent(this, LoadingScreenActivity.class);
-		//intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-		//startActivity(intent);
 	}
 	
 	@Override
@@ -573,7 +565,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 				initializeList(playlist);
 				
 				TCPReadTimerTask tcp_task = new TCPReadTimerTask();
-				Timer tcp_timer = new Timer();
+				tcp_timer = new Timer();
 				tcp_timer.schedule(tcp_task, 0, 200);
 				ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
 				bar.setProgress(0);
@@ -859,7 +851,6 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		showStatus.setText("Opening advanced playlist");
 		showStatus.show();
 		Intent intent = new Intent(this, LoadingScreenActivity.class);
-		intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
 		//startActivityForResult(intent, loading);
 	}
 
