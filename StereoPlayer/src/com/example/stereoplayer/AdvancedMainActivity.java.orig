@@ -273,12 +273,14 @@ public class AdvancedMainActivity extends Activity
 		Timer tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
 		
+<<<<<<< HEAD
 		getIndex();
-		
+=======
 		Intent intent = getIntent();
 		rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
 		initializeList(rawPlaylist);
 		overridePendingTransition(Intent.FLAG_ACTIVITY_NO_ANIMATION, R.anim.slide_to_left);
+>>>>>>> f713bfb35f016b9e6092f030ddcb348118df9c0d
 	}
 	
 	public void initializeList(String[] playlist)
