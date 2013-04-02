@@ -48,7 +48,7 @@ public class LoadingScreenActivity  extends Activity {
 		.penaltyLog().build());
 		
 		MyApplication app = (MyApplication)LoadingScreenActivity.this.getApplication();
-		//app.new SocketConnect().execute((Void) null);
+		app.new SocketConnect().execute((Void) null);
 		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 		Timer tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);

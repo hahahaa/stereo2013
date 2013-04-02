@@ -56,7 +56,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	private Toast showStatus;
 	private GestureDetector gestureDetector;
 	private ArrayList<String[]> mainPlaylist;
-	private String ipStr = "206.87.114.107";
+	private String ipStr = "206.87.117.1";
 	private int portNumber = 50002;
 	private int mode;
 
