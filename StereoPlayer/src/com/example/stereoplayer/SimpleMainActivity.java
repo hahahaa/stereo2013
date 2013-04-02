@@ -306,6 +306,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	private Toast showStatus;
 	private GestureDetector gestureDetector;
 	private ArrayList<String[]> mainPlaylist;
+	private String[] rawPlaylist;
 	private int mode;
 	private int songIndex;
 	private MyApplication app;
@@ -562,6 +563,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			if (resultCode == Activity.RESULT_OK) { 
 				
 				String[] playlist = data.getStringArrayExtra("FromLoading");
+				rawPlaylist = playlist;
 				initializeList(playlist);
 				
 				TCPReadTimerTask tcp_task = new TCPReadTimerTask();
@@ -851,7 +853,8 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		showStatus.setText("Opening advanced playlist");
 		showStatus.show();
 		Intent intent = new Intent(this, LoadingScreenActivity.class);
-		//startActivityForResult(intent, loading);
+		intent.putExtra("rawPlaylist", rawPlaylist);
+		startActivity(intent);
 	}
 
 }

@@ -25,6 +25,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".LoadingScreenActivity" />
+        <activity android:name=".AdvancedMainActivity" />
     </application>
 
 </manifest>
