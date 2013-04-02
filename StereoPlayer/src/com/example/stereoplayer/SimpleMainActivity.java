@@ -855,7 +855,6 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		Intent intent = new Intent(this, LoadingScreenActivity.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);
 		startActivity(intent);
-		//startActivityForResult(intent, loading);
 	}
 
 }
