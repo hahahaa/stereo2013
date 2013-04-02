@@ -11,6 +11,7 @@ import java.util.TimerTask;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -35,6 +36,7 @@ public class AdvancedMainActivity extends Activity
 	private MyApplication app;
 	private double currentSongPositionInTime;
 	private ArrayList<String[]> mainPlaylist;
+	private String[] rawPlaylist;
 	private int songIndex;
 	private int songVolume;
 	
@@ -270,6 +272,9 @@ public class AdvancedMainActivity extends Activity
 		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 		Timer tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
+		
+		Intent intent = getIntent();
+		rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
 	}
 	
 	public void initializeList(String[] playlist)
