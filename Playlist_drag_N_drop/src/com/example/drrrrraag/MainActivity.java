@@ -50,7 +50,7 @@ public class MainActivity extends Activity {
 		targetLayout = (LinearLayout)findViewById(R.id.targetlayout);
 		nameEdit = (EditText)findViewById(R.id.editText1);
 
-		allSonglist = gethardCodedList();	// TODO remove it
+		allSonglist = gethardCodedList();	// TODO remove it  initialize allSonglist from the caller
 		newSongList = new ArrayList<HashMap<String, String>>();
 
 		listSource.setTag("listSource");
@@ -79,7 +79,7 @@ public class MainActivity extends Activity {
 	 */
 	public void sendList (View view) {
 		if(!newSongList.isEmpty()) {
-			// TODO	send newSongList	newSongList only contain the song name and artist name
+			// TODO	send newSongList	newSongList only contain the song ID
 			// TODO do sth with the listName
 			String listName = nameEdit.getEditableText().toString();
 			if(listName.compareTo("") == 0)
@@ -201,9 +201,7 @@ public class MainActivity extends Activity {
 			default: //unknown case
 				commentMsg = v.getTag() + " : UNKNOWN !!!";
 				Log.i("drag", commentMsg);
-
 				return false;
-
 			}
 		} 
 	}
