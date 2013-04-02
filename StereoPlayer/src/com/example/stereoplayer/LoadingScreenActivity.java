@@ -33,7 +33,7 @@ public class LoadingScreenActivity  extends Activity {
 	private ArrayList<String[]> mainPlaylist;
 	
 	@Override
-	protected void onCreate(Bundle savedInstanceState){
+	public void onCreate(Bundle savedInstanceState){
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -53,6 +53,13 @@ public class LoadingScreenActivity  extends Activity {
 		Timer tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
 		
+		
+		
+	}
+	
+	@Override
+	public void onResume()
+	{
 		while(initialized == false);
 		Toast.makeText(this, "Initialized", Toast.LENGTH_SHORT).show();
 		
@@ -60,7 +67,6 @@ public class LoadingScreenActivity  extends Activity {
 		resultIntent.putExtra("FromLoading", mainPlaylist);
 		setResult(Activity.RESULT_OK, resultIntent);
 		finish();
-		
 	}
 	
 	public class TCPReadTimerTask extends TimerTask 
