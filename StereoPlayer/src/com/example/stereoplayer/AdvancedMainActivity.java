@@ -69,16 +69,14 @@ public class AdvancedMainActivity extends Activity
 							
 							byte buffer[] = new byte[ONE_BYTE];
 							in.read(buffer);
-							Log.i("HandShake", "buffer is: " + buffer[0]);
 							int numBytesOfNumber = buffer[0];
+							Log.i("HandShake", "numBytesOfNumber is: " + numBytesOfNumber);
 							
 							buffer = new byte[numBytesOfNumber];
 							
 							while( in.available() < numBytesOfNumber );
 							in.read(buffer);
-							Log.i("HandShake", "buffer[0] is: " + buffer[0]);
 							String temp = new String( buffer, 0, numBytesOfNumber, "US-ASCII" );
-							Log.i("HandShake", "temp is: " + temp );
 							
 							int numBytesOfData = Integer.parseInt( temp );
 							Log.i("HandShake", "numBytesOfData is: " + numBytesOfData );
@@ -89,12 +87,11 @@ public class AdvancedMainActivity extends Activity
 								if ( in.available() > 0 )
 								{
 									in.read(buffer);
-									Log.i("HandShake", "buffer[0] is: " + buffer[0]);
+									Log.i("HandShake", "data to concat is: " + buffer[0]);
 									data = data.concat( new String(buffer, 0, ONE_BYTE, "US-ASCII") );
 									i++;
 								}
 							}
-							
 							Log.i("HandShake", "Data is: " + data);
 						}
 						
@@ -180,7 +177,12 @@ public class AdvancedMainActivity extends Activity
 									
 									setupTime( Integer.parseInt( mainPlaylist.get(songIndex)[4] ) );
 									currentSongPositionInTime = 0;
-								} 
+								}
+								else if ( command.compareTo( "I" ) == 0 )
+								{
+									songIndex = Integer.parseInt( message );
+									Log.i("indexNumber", Integer.toString(songIndex));
+								}
 								else
 								{
 									
@@ -270,8 +272,24 @@ public class AdvancedMainActivity extends Activity
 		tcp_timer.schedule(tcp_task, 3000, 200);
 	}
 	
-	
-	
+	public void initializeList(String[] playlist)
+	{
+		Log.i("Modee", "SimpleMain - initializing Song List");
+		mainPlaylist = new ArrayList<String[]>();
+		
+		for (int i = 0; i + 5 <= playlist.length; i += 5) 
+		{
+			String[] newSong = new String[5];
+			newSong[0] = playlist[i];
+			newSong[1] = playlist[i + 1];
+			newSong[2] = playlist[i + 2];
+			newSong[3] = playlist[i + 3];
+			newSong[4]	= playlist[i + 4];
+			mainPlaylist.add(newSong);
+		}
+		
+		Log.i("Modee", "SimpleMain - Finished initializing Song List");
+	}
 	
 	public void playPauseSong(View view) {
 		app.new SocketSend().execute("P");
