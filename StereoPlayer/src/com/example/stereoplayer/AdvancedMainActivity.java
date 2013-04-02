@@ -62,7 +62,7 @@ public class AdvancedMainActivity extends Activity
 						String data = new String();
 
 					
-						if (msg.compareTo("M") == 0)
+						if (msg.compareTo("M") == 0 || msg.compareTo("I") == 0)
 						{
 							while ( in.available() == 0 );
 							bytes_avail = in.available();
@@ -270,6 +270,8 @@ public class AdvancedMainActivity extends Activity
 		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 		Timer tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
+		
+		getIndex();
 	}
 	
 	public void initializeList(String[] playlist)
@@ -313,6 +315,10 @@ public class AdvancedMainActivity extends Activity
 
 	public void downVolume() {
 		app.new SocketSend().execute("D");
+	}
+	
+	public void getIndex() {
+		app.new SocketSend().execute("I");
 	}
 	
 	public void onClickPlayOrderMode( View view )
