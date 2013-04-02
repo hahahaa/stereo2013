@@ -388,7 +388,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
  				updateVolume();
  	 			showStatus.setText("Volume = " + Integer.toString(songVolume));
  				showStatus.show();
- 				upVolume();
+ 				downVolume();
  			}
  			
 			return true;
@@ -408,7 +408,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 				updateVolume();
 				showStatus.setText("Volume = " + Integer.toString(songVolume));
 				showStatus.show();
-				downVolume();
+				upVolume();
 			}
 
 			return true;
@@ -575,13 +575,12 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 				TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 				Timer tcp_timer = new Timer();
 				tcp_timer.schedule(tcp_task, 0, 200);
-				
-				/*for (int i= 0; i < playlist.length; i++)
-				{
-					Log.i("inside", playlist[i]);
-				}*/
-				
-				//Toast.makeText(this, newText, Toast.LENGTH_SHORT).show();
+				ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
+				bar.setProgress(0);
+				TextView songName = (TextView) findViewById(R.id.songName);
+				TextView artistName = (TextView) findViewById(R.id.artistName);
+				songName.setText(mainPlaylist.get(0)[1]);
+				artistName.setText(mainPlaylist.get(0)[2]);
 			} 
 			break; 
 		} 
