@@ -157,7 +157,7 @@ public class AdvancedMainActivity extends Activity
 									int currentProgress = (int) ( ((double) currentSongPositionInTime) / (double) songLength * 100.0 );
 									pb.setProgress( currentProgress );
 									
-									//updateTime( currentSongPositionInTime, songLength );
+									updateTime( currentSongPositionInTime, songLength );
 
 									Log.i("Prog", "currentSongPosition is: " + currentSongPositionInTime );
 								}
@@ -172,7 +172,7 @@ public class AdvancedMainActivity extends Activity
 									Log.i("indexNumber", Integer.toString(songIndex));
 									text.setText("Playing: " + mainPlaylist.get(songIndex)[1] );
 									
-									//setupTime( Integer.parseInt( mainPlaylist.get(songIndex)[4] ) );
+									setupTime( Integer.parseInt( mainPlaylist.get(songIndex)[4] ) );
 								}
 								else if ( command.compareTo( "I" ) == 0 )
 								{
@@ -560,18 +560,18 @@ public class AdvancedMainActivity extends Activity
 		MaxTimeSec.setText( maxSecStr );
 	}
 	
-	public void updateTime( double currentSongPositionInTime, int songLength )
+	public void updateTime( int currentSongPositionInTime, int songLength )
 	{
 		TextView currTimeMin = (TextView) findViewById( R.id.textView1 );
 		TextView currTimeSec = (TextView) findViewById( R.id.textView3 );
 		
-		int currTime = (int) (currentSongPositionInTime * songLength / 100.0 );
+		//int currTime = (int) (currentSongPositionInTime * songLength / 100.0 );
 		
-		if ( currTime > songLength )
+		if ( currentSongPositionInTime > songLength )
 			return;
 		
-		int currMin = currTime / 60;
-		int currSec = currTime % 60;
+		int currMin = currentSongPositionInTime / 60;
+		int currSec = currentSongPositionInTime % 60;
 		
 		String currSecStr = Integer.toString( currSec );
 		if ( currSec < 10 )
