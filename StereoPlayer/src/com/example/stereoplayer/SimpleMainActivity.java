@@ -65,55 +65,52 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 					
 					if (bytes_avail > 0) 
 					{
-						Log.i( "Prog", bytes_avail + "bytes are available to be read" );
+						Log.i( "HandShake", bytes_avail + " bytes are available to be read" );
 						
 						byte buf[] = new byte[ONE_BYTE];
 						in.read(buf);
+						Log.i( "HandShake", "buf we got for command is: " + buf[0] );
 						String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
 						String data = new String();
-
+						Log.i( "HandShake", "Command got is: " + msg );
 						
-							if (msg.compareTo("M") == 0)
-							{
-								while ( in.available() == 0 );
-								bytes_avail = in.available();
-								
-								byte buffer[] = new byte[ONE_BYTE];
-								in.read(buffer);
-								Log.i("HandShake", "buffer is: " + buffer[0]);
-								int numBytesOfNumber = buffer[0];
-								
-								buffer = new byte[numBytesOfNumber];
-								
-								while( in.available() < numBytesOfNumber );
-								in.read(buffer);
-								Log.i("HandShake", "buffer[0] is: " + buffer[0]);
-								String temp = new String( buffer, 0, numBytesOfNumber, "US-ASCII" );
-								Log.i("HandShake", "temp is: " + temp );
-								
-								int numBytesOfData = Integer.parseInt( temp );
-								Log.i("HandShake", "numBytesOfData is: " + numBytesOfData );
-								
-								buffer = new byte[ONE_BYTE];
-								for ( int i = 0; i < numBytesOfData; )
-								{
-									if ( in.available() > 0 )
-									{
-										in.read(buffer);
-										Log.i("HandShake", "buffer[0] is: " + buffer[0]);
-										data = data.concat( new String(buffer, 0, ONE_BYTE, "US-ASCII") );
-										i++;
-									}
-								}
-								
-								Log.i("HandShake", "Data is: " + data);
+						if (msg.compareTo("M") == 0)
+						{
+							while ( in.available() == 0 );
+							bytes_avail = in.available();
 							
+							byte buffer[] = new byte[ONE_BYTE];
+							in.read(buffer);
+							int numBytesOfNumber = buffer[0];
+							Log.i("HandShake", "numBytesOfNumber is: " + numBytesOfNumber);
+							
+							buffer = new byte[numBytesOfNumber];
+							
+							while( in.available() < numBytesOfNumber );
+							in.read(buffer);
+							String temp = new String( buffer, 0, numBytesOfNumber, "US-ASCII" );
+							
+							int numBytesOfData = Integer.parseInt( temp );
+							Log.i("HandShake", "numBytesOfData is: " + numBytesOfData );
+							
+							buffer = new byte[ONE_BYTE];
+							for ( int i = 0; i < numBytesOfData; )
+							{
+								if ( in.available() > 0 )
+								{
+									in.read(buffer);
+									Log.i("HandShake", "data to concat is: " + buffer[0]);
+									data = data.concat( new String(buffer, 0, ONE_BYTE, "US-ASCII") );
+									i++;
+								}
+							}
+							Log.i("HandShake", "Data is: " + data);
 						}
 						
 						final String command = new String(msg);
 						final String message = new String( data );
 
-						Log.i("HandShake", "String s is: " + command);
+						Log.i("HandShake", "Command is: " + command);
 						if (msg.compareTo("M") == 0)
 						{
 							Log.i("Shuffle", "String data is: " + data);
@@ -132,6 +129,8 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 
 								if ( command.compareTo( "P" ) == 0 )
 								{
+									Log.i( "Modee", "Got P: " );
+									
 									ImageView image = (ImageView) findViewById(R.id.mainButton);
 
 
@@ -142,6 +141,8 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 								}
 								else if (command.compareTo("p") == 0) 
 								{
+									Log.i( "Modee", "Got p: " );
+									
 									ImageView image = (ImageView) findViewById(R.id.mainButton);
 
 
@@ -177,6 +178,8 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 								} 
 								else if (command.compareTo("O") == 0) 
 								{
+									Log.i( "Modee", "Got O: " );
+									
 									ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
 									int songLength = Integer.parseInt(mainPlaylist.get(songIndex)[4]);
 									double progressInterval = 100.0 / songLength;
@@ -192,6 +195,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 								}
 								else if (command.compareTo("M") == 0) 
 								{
+									Log.i( "Modee", "Got M: " );
 									
 									ImageView image = (ImageView) findViewById(R.id.mainButton);
 									TextView songName = (TextView) findViewById(R.id.songName);
@@ -199,6 +203,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 									ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
 									bar.setProgress( 0 );
 									songIndex = Integer.parseInt( message );
+									Log.i( "Mode", "In M: songIndex is: " + songIndex );
 									songName.setText(mainPlaylist.get(songIndex)[1]);
 									artistName.setText(mainPlaylist.get(songIndex)[2]);
 
@@ -450,7 +455,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			float newWidth = (float) (width/1.6);
 			float newHeight = (float) (height/8);
 			
-			
+			/*
 			float currentWidth = 256;
 			float scale = newWidth/currentWidth;
 			image.setScaleY( scale );
@@ -467,6 +472,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			volume.setScaleX(scale);
 			volume.setScaleY(scale);
 			//volume.setX(-100);
+			*/
 			
 			volume.setImageResource(R.drawable.volumev3);
 			volume.setAlpha((float)0);
@@ -559,7 +565,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 				
 				TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 				Timer tcp_timer = new Timer();
-				tcp_timer.schedule(tcp_task, 3000, 200);
+				tcp_timer.schedule(tcp_task, 0, 200);
 				
 				/*for (int i= 0; i < playlist.length; i++)
 				{
@@ -573,7 +579,10 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		} 
 	}
 	
-	public void initializeList(String[] playlist) {
+	public void initializeList(String[] playlist)
+	{
+		Log.i("Modee", "SimpleMain - initializing Song List");
+		mainPlaylist = new ArrayList<String[]>();
 		
 		for (int i = 0; i + 5 <= playlist.length; i += 5) 
 		{
@@ -585,6 +594,8 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			newSong[4]	= playlist[i + 4];
 			mainPlaylist.add(newSong);
 		}
+		
+		Log.i("Modee", "SimpleMain - Finished initializing Song List");
 	}
 	
 	public void playPauseSong(View view) {

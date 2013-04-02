@@ -74,7 +74,8 @@ public class LoadingScreenActivity  extends Activity {
 	
 	private final static int ONE_BYTE = 1;
 	private boolean initialized = false;
-	SocketConnect cc;
+	SocketConnect socketCon;
+	Timer tcp_timer;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState){
@@ -94,11 +95,11 @@ public class LoadingScreenActivity  extends Activity {
 		.penaltyLog().build());
 		
 		Log.i("flow", "LoadingScreenActivity: Calling SocketConnect().execute()" );
-		cc = (SocketConnect) new SocketConnect().execute((Void) null);
+		socketCon = (SocketConnect) new SocketConnect().execute((Void) null);
 		Log.i("flow", "LoadingScreenActivity: SocketConnect().execute is done" );
 		
 		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
-		Timer tcp_timer = new Timer();
+		tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
 		Log.i("flow", "LoadingScreenActivity: Scheduled ReadTimerTask" );	
 	}
@@ -107,7 +108,7 @@ public class LoadingScreenActivity  extends Activity {
 	{		
 		public void run() 
 		{
-			Log.i("Prog", "Read Timer Task started");
+			Log.i("Prog", "LoadingScreen - Read Timer Task started");
 
 			MyApplication app = (MyApplication) getApplication();
 			if (app.sock != null && app.sock.isConnected() && !app.sock.isClosed()) 
@@ -124,11 +125,10 @@ public class LoadingScreenActivity  extends Activity {
 						byte buf[] = new byte[ONE_BYTE];
 						in.read(buf);
 						String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
-						String data = new String();
 
 						if (!initialized) 
 						{
-							Log.i("Prog", "Receiving Song List");
+							Log.i("Modee", "LoadingScreen - Receiving Song List");
 
 							app.new SocketSend().execute("A");
 
@@ -155,57 +155,12 @@ public class LoadingScreenActivity  extends Activity {
 									msg = msg.concat(tempStr);
 								}
 							}
-							Log.i("Prog", "Done Receiving Song List");
-						}
-						else
-						{
-							if (msg.compareTo("M") == 0)
-							{
-								while ( in.available() == 0 );
-								bytes_avail = in.available();
-								
-								byte buffer[] = new byte[ONE_BYTE];
-								in.read(buffer);
-								Log.i("HandShake", "buffer is: " + buffer[0]);
-								int numBytesOfNumber = buffer[0];
-								
-								buffer = new byte[numBytesOfNumber];
-								
-								while( in.available() < numBytesOfNumber );
-								in.read(buffer);
-								Log.i("HandShake", "buffer[0] is: " + buffer[0]);
-								String temp = new String( buffer, 0, numBytesOfNumber, "US-ASCII" );
-								Log.i("HandShake", "temp is: " + temp );
-								
-								int numBytesOfData = Integer.parseInt( temp );
-								Log.i("HandShake", "numBytesOfData is: " + numBytesOfData );
-								
-								buffer = new byte[ONE_BYTE];
-								for ( int i = 0; i < numBytesOfData; )
-								{
-									if ( in.available() > 0 )
-									{
-										in.read(buffer);
-										Log.i("HandShake", "buffer[0] is: " + buffer[0]);
-										data = data.concat( new String(buffer, 0, ONE_BYTE, "US-ASCII") );
-										i++;
-									}
-								}
-								
-								Log.i("HandShake", "Data is: " + data);
-							}
+							Log.i("Modee", "LoadingScreen - Done Receiving Song List");
 						}
 						
 						final String command = new String(msg);
-						final String message = new String( data );
 
-						Log.i("HandShake", "String s is: " + command);
-						if (msg.compareTo("M") == 0)
-						{
-							Log.i("Shuffle", "String data is: " + data);
-							Log.i("Shuffle", "String message is: " + message);
-						}
-						
+						Log.i("HandShake", "LoadingScreen - Command is: " + command);						
 						
 						runOnUiThread(new Runnable() 
 						{
@@ -215,7 +170,7 @@ public class LoadingScreenActivity  extends Activity {
 
 								if ( !initialized ) 
 								{
-									Log.i("Prog", "Initializing Song List");
+									initialized = true;
 
 									String[] buffer = command.split("\\.");
 									
@@ -227,7 +182,9 @@ public class LoadingScreenActivity  extends Activity {
 									Intent resultIntent = new Intent();
 									resultIntent.putExtra("FromLoading", playlist);
 									setResult(Activity.RESULT_OK, resultIntent);
-									finish();								
+									tcp_timer.cancel();
+									finish();
+									
 								}
 							}
 						});
