@@ -852,8 +852,9 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	{
 		showStatus.setText("Opening advanced playlist");
 		showStatus.show();
-		Intent intent = new Intent(this, LoadingScreenActivity.class);
+		Intent intent = new Intent(this, AdvancedMainActivity.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);
+		tcp_timer.cancel();
 		startActivity(intent);
 	}
 

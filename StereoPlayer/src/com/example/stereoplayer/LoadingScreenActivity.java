@@ -24,7 +24,7 @@ import android.view.WindowManager;
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class LoadingScreenActivity  extends Activity {
 	
-	private String ipStr = "206.87.117.1";
+	private String ipStr = "206.87.119.60";
 	private int portNumber = 50002;
 	
 	public class SocketConnect extends AsyncTask<Void, Void, Socket> {

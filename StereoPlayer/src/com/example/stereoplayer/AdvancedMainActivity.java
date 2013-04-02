@@ -26,7 +26,7 @@ import android.widget.ToggleButton;
 public class AdvancedMainActivity extends Activity
 {
 	/* Set this to true if debugging saving and loading play list and/or rating list*/
-	boolean Debug = true;
+	boolean Debug = false;
 	
 	/* Constants */
 	final static int ONE_BYTE = 1;
@@ -34,18 +34,16 @@ public class AdvancedMainActivity extends Activity
 	
 	/* Variables */	
 	private MyApplication app;
-	private double currentSongPositionInTime;
 	private ArrayList<String[]> mainPlaylist;
 	private String[] rawPlaylist;
 	private int songIndex;
 	private int songVolume;
+	private TCPReadTimerTask tcp_task;
 	
 	public class TCPReadTimerTask extends TimerTask 
 	{		
 		public void run() 
 		{
-			Log.i("Prog", "Read Timer Task started");
-
 			MyApplication app = (MyApplication) getApplication();
 			if (app.sock != null && app.sock.isConnected() && !app.sock.isClosed()) 
 			{
@@ -55,24 +53,22 @@ public class AdvancedMainActivity extends Activity
 					int bytes_avail = in.available();
 					
 					if (bytes_avail > 0) 
-					{
-						Log.i( "Prog", bytes_avail + "bytes are available to be read" );
-						
+					{						
 						byte buf[] = new byte[ONE_BYTE];
 						in.read(buf);
 						String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
 						String data = new String();
-
+						//Log.i("AdvancedMain", "Handshake - msg to compare is: " + msg);
 					
-						if (msg.compareTo("M") == 0 || msg.compareTo("I") == 0)
-						{
+						if (msg.compareTo("M") == 0 || msg.compareTo("I") == 0 || msg.compareTo("O") == 0 )
+						{							
 							while ( in.available() == 0 );
 							bytes_avail = in.available();
 							
 							byte buffer[] = new byte[ONE_BYTE];
 							in.read(buffer);
 							int numBytesOfNumber = buffer[0];
-							Log.i("HandShake", "numBytesOfNumber is: " + numBytesOfNumber);
+							//Log.i("AdvancedMain", "Handshake - numBytesOfNumber is: " + numBytesOfNumber);
 							
 							buffer = new byte[numBytesOfNumber];
 							
@@ -81,7 +77,7 @@ public class AdvancedMainActivity extends Activity
 							String temp = new String( buffer, 0, numBytesOfNumber, "US-ASCII" );
 							
 							int numBytesOfData = Integer.parseInt( temp );
-							Log.i("HandShake", "numBytesOfData is: " + numBytesOfData );
+							//Log.i("AdvancedMain", "Handshake - numBytesOfData is: " + numBytesOfData );
 							
 							buffer = new byte[ONE_BYTE];
 							for ( int i = 0; i < numBytesOfData; )
@@ -89,18 +85,20 @@ public class AdvancedMainActivity extends Activity
 								if ( in.available() > 0 )
 								{
 									in.read(buffer);
-									Log.i("HandShake", "data to concat is: " + buffer[0]);
+									//Log.i("AdvancedMain", "Handshake - data to concat is: " + buffer[0]);
 									data = data.concat( new String(buffer, 0, ONE_BYTE, "US-ASCII") );
 									i++;
 								}
 							}
-							Log.i("HandShake", "Data is: " + data);
+							//Log.i("AdvancedMain", "Handshake - Data is: " + data);
 						}
 						
 						final String command = new String(msg);
 						final String message = new String( data );
 
-						Log.i("HandShake", "String s is: " + command);
+						Log.i("AdvancedMain", "Handshake - Commands is: " + command);
+						Log.i("AdvancedMain", "Handshake - message is: " + message);
+						
 						if (msg.compareTo("M") == 0)
 						{
 							Log.i("Shuffle", "String data is: " + data);
@@ -141,44 +139,40 @@ public class AdvancedMainActivity extends Activity
 								/* Deprecated */
 								else if (command.compareTo("N") == 0) 
 								{
-									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
 									pb.setProgress( 0 );
 								}
 								/* Deprecated */
 								else if (command.compareTo("L") == 0) 
 								{
-									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
 									pb.setProgress( 0 );
 								} 
 								else if (command.compareTo("O") == 0) 
 								{
-									/*
-									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									int currentSongPositionInTime = Integer.parseInt( message );
+									
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
 									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
-									double progressInterval = 100.0 / songLength;
+									int currentProgress = (int) ( ((double) currentSongPositionInTime) / (double) songLength * 100.0 );
+									pb.setProgress( currentProgress );
 									
-									currentSongPositionInTime += progressInterval;
-									pb.setProgress( (int) currentSongPositionInTime );
-									
-									updateTime( currentSongPositionInTime, songLength );
-									
-									Log.i("Prog", "Progress increased by " + progressInterval );
+									//updateTime( currentSongPositionInTime, songLength );
+
 									Log.i("Prog", "currentSongPosition is: " + currentSongPositionInTime );
-									*/
 								}
 								else if (command.compareTo("M") == 0) 
 								{
-									Log.i( "HandShake", "Successfully reached here" );
+									Log.i( "AdvancedMain", "Successfully reached here" );
 									
-									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
 									pb.setProgress( 0 );
 									
 									songIndex = Integer.parseInt( message );
 									Log.i("indexNumber", Integer.toString(songIndex));
 									text.setText("Playing: " + mainPlaylist.get(songIndex)[1] );
 									
-									setupTime( Integer.parseInt( mainPlaylist.get(songIndex)[4] ) );
-									currentSongPositionInTime = 0;
+									//setupTime( Integer.parseInt( mainPlaylist.get(songIndex)[4] ) );
 								}
 								else if ( command.compareTo( "I" ) == 0 )
 								{
@@ -262,14 +256,13 @@ public class AdvancedMainActivity extends Activity
 
 		app = (MyApplication)AdvancedMainActivity.this.getApplication();
 		
-		currentSongPositionInTime = 0;
 		songVolume = 0;
 		
 		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
 		.detectDiskReads().detectDiskWrites().detectNetwork()
 		.penaltyLog().build());
 		
-		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
+		tcp_task = new TCPReadTimerTask();
 		Timer tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
 		
@@ -278,12 +271,12 @@ public class AdvancedMainActivity extends Activity
 		Intent intent = getIntent();
 		rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
 		initializeList(rawPlaylist);
-		overridePendingTransition(Intent.FLAG_ACTIVITY_NO_ANIMATION, R.anim.slide_to_left);
+		overridePendingTransition(R.anim.slide_to_left, R.anim.slide_to_left);
 	}
 	
 	public void initializeList(String[] playlist)
 	{
-		Log.i("Modee", "SimpleMain - initializing Song List");
+		Log.i("AdvancedMain", "SimpleMain - initializing Song List");
 		mainPlaylist = new ArrayList<String[]>();
 		
 		for (int i = 0; i + 5 <= playlist.length; i += 5) 
@@ -297,7 +290,7 @@ public class AdvancedMainActivity extends Activity
 			mainPlaylist.add(newSong);
 		}
 		
-		Log.i("Modee", "SimpleMain - Finished initializing Song List");
+		Log.i("AdvancedMain", "SimpleMain - Finished initializing Song List");
 	}
 	
 	public void playPauseSong(View view) {
@@ -308,19 +301,19 @@ public class AdvancedMainActivity extends Activity
 		app.new SocketSend().execute("S");
 	}
 
-	public void nextSong() {
+	public void nextSong(View view) {
 		app.new SocketSend().execute("N");
 	}
 
-	public void prevSong() {
+	public void prevSong(View view) {
 		app.new SocketSend().execute("L");
 	}
 
-	public void upVolume() {
+	public void upVolume(View view) {
 		app.new SocketSend().execute("U");
 	}
 
-	public void downVolume() {
+	public void downVolume(View view) {
 		app.new SocketSend().execute("D");
 	}
 	
