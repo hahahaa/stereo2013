@@ -270,6 +270,7 @@ public class AdvancedMainActivity extends Activity
 		
 		Intent intent = getIntent();
 		rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
+		songVolume = intent.getIntExtra("volume", 4);
 		initializeList(rawPlaylist);
 		overridePendingTransition(R.anim.slide_to_left, R.anim.slide_to_left);
 	}

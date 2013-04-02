@@ -74,7 +74,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 						String data = new String();
 						Log.i( "HandShake", "Command got is: " + msg );
 						
-						if (msg.compareTo("M") == 0)
+						if (msg.compareTo("M") == 0 || msg.compareTo("V")==0)
 						{
 							while ( in.available() == 0 );
 							bytes_avail = in.available();
@@ -234,6 +234,10 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 									currentSongPositionInTime = 0;
 									*/
 								} 
+								else if (command.compareTo("V")==0)
+								{
+									songVolume = Integer.parseInt(message);
+								}
 								else
 								{
 									
@@ -340,6 +344,13 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			startActivityForResult(intent, loading);
 		}
 		
+	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		app.new SocketSend().execute("V");
 	}
 	
 	@Override
@@ -879,6 +890,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		showStatus.show();
 		Intent intent = new Intent(this, AdvancedMainActivity.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);
+		intent.putExtra("volume", songVolume);
 		tcp_timer.cancel();
 		startActivity(intent);
 	}

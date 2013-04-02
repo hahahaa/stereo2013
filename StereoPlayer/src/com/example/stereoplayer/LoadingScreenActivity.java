@@ -176,10 +176,12 @@ public class LoadingScreenActivity  extends Activity {
 									
 									for (int k = 0; k < buffer.length; k++)
 										Log.i("buffer", buffer[k]);
-									
+									//String volumeInString = buffer[0];
+									int volume = Integer.parseInt(buffer[0]);
 									String[] playlist = Arrays.copyOfRange(buffer, 1, buffer.length);
 									
 									Intent resultIntent = new Intent();
+									resultIntent.putExtra("volume", volume);
 									resultIntent.putExtra("FromLoading", playlist);
 									setResult(Activity.RESULT_OK, resultIntent);
 									tcp_timer.cancel();
