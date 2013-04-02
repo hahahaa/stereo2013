@@ -5,23 +5,246 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.ToggleButton;
 
 public class AdvancedMainActivity extends Activity
 {
+	/* Set this to true if debugging saving and loading play list and/or rating list*/
+	boolean Debug = true;
+	
+	/* Constants */
 	final static int ONE_BYTE = 1;
 	final static int MAX_BYTES = 255;
 	
+	/* Variables */	
 	private MyApplication app;
+	private double currentSongPositionInTime;
+	private ArrayList<String[]> mainPlaylist;
+	private int songIndex;
+	private int songVolume;
+	
+	public class TCPReadTimerTask extends TimerTask 
+	{		
+		public void run() 
+		{
+			Log.i("Prog", "Read Timer Task started");
+
+			MyApplication app = (MyApplication) getApplication();
+			if (app.sock != null && app.sock.isConnected() && !app.sock.isClosed()) 
+			{
+				try 
+				{
+					InputStream in = app.sock.getInputStream();
+					int bytes_avail = in.available();
+					
+					if (bytes_avail > 0) 
+					{
+						Log.i( "Prog", bytes_avail + "bytes are available to be read" );
+						
+						byte buf[] = new byte[ONE_BYTE];
+						in.read(buf);
+						String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
+						String data = new String();
+
+					
+						if (msg.compareTo("M") == 0)
+						{
+							while ( in.available() == 0 );
+							bytes_avail = in.available();
+							
+							byte buffer[] = new byte[ONE_BYTE];
+							in.read(buffer);
+							Log.i("HandShake", "buffer is: " + buffer[0]);
+							int numBytesOfNumber = buffer[0];
+							
+							buffer = new byte[numBytesOfNumber];
+							
+							while( in.available() < numBytesOfNumber );
+							in.read(buffer);
+							Log.i("HandShake", "buffer[0] is: " + buffer[0]);
+							String temp = new String( buffer, 0, numBytesOfNumber, "US-ASCII" );
+							Log.i("HandShake", "temp is: " + temp );
+							
+							int numBytesOfData = Integer.parseInt( temp );
+							Log.i("HandShake", "numBytesOfData is: " + numBytesOfData );
+							
+							buffer = new byte[ONE_BYTE];
+							for ( int i = 0; i < numBytesOfData; )
+							{
+								if ( in.available() > 0 )
+								{
+									in.read(buffer);
+									Log.i("HandShake", "buffer[0] is: " + buffer[0]);
+									data = data.concat( new String(buffer, 0, ONE_BYTE, "US-ASCII") );
+									i++;
+								}
+							}
+							
+							Log.i("HandShake", "Data is: " + data);
+						}
+						
+						final String command = new String(msg);
+						final String message = new String( data );
+
+						Log.i("HandShake", "String s is: " + command);
+						if (msg.compareTo("M") == 0)
+						{
+							Log.i("Shuffle", "String data is: " + data);
+							Log.i("Shuffle", "String message is: " + message);
+						}
+						
+						
+						runOnUiThread(new Runnable() 
+						{
+							public void run() 
+							{								
+								Log.i("Prog", "Started Run On UI Thread");
+
+								TextView volumeT = (TextView) findViewById(R.id.viewText1);
+								TextView text = (TextView) findViewById(R.id.viewText2);
+
+								
+								if ( command.compareTo( "P" ) == 0 )
+								{
+									text.setText("Playing: " + mainPlaylist.get(songIndex)[1]);
+								}
+								else if (command.compareTo("p") == 0) 
+								{
+									text.setText("Paused");
+								} 
+								else if (command.compareTo("S") == 0) 
+								{
+									text.setText("Stoppped");
+								} 
+								else if (command.compareTo("U") == 0) 
+								{
+									volumeT.setText("Volume = " + Integer.toString(songVolume));
+								} 
+								else if (command.compareTo("D") == 0) 
+								{
+									volumeT.setText("Volume = " + Integer.toString(songVolume));
+								} 
+								/* Deprecated */
+								else if (command.compareTo("N") == 0) 
+								{
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									pb.setProgress( 0 );
+								}
+								/* Deprecated */
+								else if (command.compareTo("L") == 0) 
+								{
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									pb.setProgress( 0 );
+								} 
+								else if (command.compareTo("O") == 0) 
+								{
+									/*
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
+									double progressInterval = 100.0 / songLength;
+									
+									currentSongPositionInTime += progressInterval;
+									pb.setProgress( (int) currentSongPositionInTime );
+									
+									updateTime( currentSongPositionInTime, songLength );
+									
+									Log.i("Prog", "Progress increased by " + progressInterval );
+									Log.i("Prog", "currentSongPosition is: " + currentSongPositionInTime );
+									*/
+								}
+								else if (command.compareTo("M") == 0) 
+								{
+									Log.i( "HandShake", "Successfully reached here" );
+									
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
+									pb.setProgress( 0 );
+									
+									songIndex = Integer.parseInt( message );
+									Log.i("indexNumber", Integer.toString(songIndex));
+									text.setText("Playing: " + mainPlaylist.get(songIndex)[1] );
+									
+									setupTime( Integer.parseInt( mainPlaylist.get(songIndex)[4] ) );
+									currentSongPositionInTime = 0;
+								} 
+								else
+								{
+									
+								}
+							}
+						});
+					}
+					
+					/* Debugging purpose */
+					if ( Debug )
+					{
+						String[] list = new String[100];
+						for ( int i = 0; i < 100; i++ )
+						{
+							list[i] = Integer.toString( i );
+						}
+						
+						/* playlist */
+						Log.i( "list", "Before save playList" );
+						savePlayList( "playList.txt", list );
+						Log.i( "list", "After save playList and Before load PlayList" );
+						
+						list = loadPlayList( "playList.txt" );
+						Log.i( "list", "After Load playList" );
+						
+						for ( int i = 0; i < list.length; i++ )
+							Log.i( "list", list[i] );
+						
+						sendCurrentPlayListToDE2( list );
+						
+						/* rating */
+						for ( int i = 0; i < 100; i++ )
+						{
+							list[i] = Integer.toString( 99-i );
+						}
+						
+						Log.i( "list", "Before save saveRating" );
+						saveRating( list );
+						Log.i( "list", "After save saveRating and Before load saveRating" );
+						
+						list = loadRating( );
+						Log.i( "list", "After Load saveRating" );
+						
+						for ( int i = 0; i < list.length; i++ )
+							Log.i( "list", list[i] );
+						
+						Debug = false;
+					}
+				} 
+				catch (IOException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	@Override
@@ -34,6 +257,17 @@ public class AdvancedMainActivity extends Activity
 		setContentView(R.layout.advanced_main);
 
 		app = (MyApplication)AdvancedMainActivity.this.getApplication();
+		
+		currentSongPositionInTime = 0;
+		songVolume = 0;
+		
+		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+		.detectDiskReads().detectDiskWrites().detectNetwork()
+		.penaltyLog().build());
+		
+		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
+		Timer tcp_timer = new Timer();
+		tcp_timer.schedule(tcp_task, 3000, 200);
 	}
 	
 	
@@ -284,5 +518,42 @@ public class AdvancedMainActivity extends Activity
 	/* Debugging purpose */
 	public void debugHandShakedLongMessage(View view) {
 		app.new SocketSend().execute("M");
+	}
+	
+	public void setupTime( int songLength )
+	{
+		TextView MaxTimeMin = (TextView) findViewById( R.id.textView5 );
+		TextView MaxTimeSec = (TextView) findViewById( R.id.textView7 );
+		
+		int maxMin = songLength / 60;
+		int maxSec = songLength % 60;
+		
+		String maxSecStr = Integer.toString( maxSec );
+		if ( maxSec < 10 )
+			maxSecStr = "0" + maxSecStr;
+		
+		MaxTimeMin.setText( Integer.toString( maxMin ) );
+		MaxTimeSec.setText( maxSecStr );
+	}
+	
+	public void updateTime( double currentSongPositionInTime, int songLength )
+	{
+		TextView currTimeMin = (TextView) findViewById( R.id.textView1 );
+		TextView currTimeSec = (TextView) findViewById( R.id.textView3 );
+		
+		int currTime = (int) (currentSongPositionInTime * songLength / 100.0 );
+		
+		if ( currTime > songLength )
+			return;
+		
+		int currMin = currTime / 60;
+		int currSec = currTime % 60;
+		
+		String currSecStr = Integer.toString( currSec );
+		if ( currSec < 10 )
+			currSecStr = "0" + currSecStr;
+		
+		currTimeMin.setText( Integer.toString( currMin ) );
+		currTimeSec.setText( currSecStr );
 	}
 }
