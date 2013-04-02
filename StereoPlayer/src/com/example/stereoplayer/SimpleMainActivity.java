@@ -6,6 +6,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
+import com.example.stereoplayer.MyApplication.SocketSend;
+
 
 
 
@@ -38,8 +40,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-public class SimpleMainActivity extends Activity implements OnGestureListener {
-	
+public class SimpleMainActivity extends Activity implements OnGestureListener {	
 	
 	/* Set this to true if debugging saving and loading play list and/or rating list*/
 	boolean Debug = true;
@@ -56,8 +57,6 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	private Toast showStatus;
 	private GestureDetector gestureDetector;
 	private ArrayList<String[]> mainPlaylist;
-	private String ipStr = "206.87.117.1";
-	private int portNumber = 50002;
 	private int mode;
 
 	@SuppressLint("ShowToast")
@@ -78,8 +77,8 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		scale.run();
 		
 		MyApplication app = (MyApplication)SimpleMainActivity.this.getApplication();
-		app.ipStr = ipStr;
-		app.portNumber = portNumber;
+		//app.ipStr = ipStr;
+		//app.portNumber = portNumber;
 		
 		
 		//new SocketConnect().execute((Void) null);

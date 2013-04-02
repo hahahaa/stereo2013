@@ -2,17 +2,20 @@ package com.example.stereoplayer;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.example.stereoplayer.MyApplication.SocketSend;
 
-import com.example.stereoplayer.MyApplication.SocketConnect;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -27,13 +30,81 @@ import android.widget.Toast;
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class LoadingScreenActivity  extends Activity {
 	
+	private String ipStr = "206.87.117.1";
+	private int portNumber = 50002;
+	
+	// This is the Socket Connect asynchronous thread. Opening a socket
+	// has to be done in an Asynchronous thread in Android. Be sure you
+	// have done the Asynchronous Tread tutorial before trying to understand
+	// this code.
+	public class SocketConnect extends AsyncTask<Void, Void, Socket> {
+
+		// The main parcel of work for this thread. Opens a socket
+		// to connect to the specified IP.
+		@Override
+		protected Socket doInBackground(Void... voids) {
+			Log.i("flow", "SocketConnect: doInBackground" );
+			Socket s = null;
+			String ip = ipStr;
+			Integer port = portNumber;
+			try {
+				s = new Socket(ip, port);
+			} catch (UnknownHostException e) {
+				Log.i("flow", "SocketConnect: UnknownHostException" );
+			} catch (IOException e) {
+				Log.i("flow", "SocketConnect: IOException" );
+			}
+			Log.i("flow", "SocketConnect: returning from doInBackground" );
+			//cc.notifyAll();
+			return s;
+		}
+
+		// After executing the doInBackground method, this is
+		// automatically called, in the UI (main) thread to store
+		// the socket in this app's persistent storage
+		@Override
+		protected void onPostExecute(Socket s) {
+			Log.i("flow", "SocketConnect: onPostExecute" );
+			MyApplication myApp = (MyApplication) LoadingScreenActivity.this.getApplication();
+			myApp.sock = s;
+			//sock = s;
+
+			try {
+				Log.i( "Prog", "Clearing UART" );
+
+				InputStream in = s.getInputStream();
+				int bytes_avail = in.available();
+				if (bytes_avail > 0) {
+					// If so, read them in and create a string
+					byte buf[] = new byte[bytes_avail];
+					in.read(buf);
+
+				}
+			} catch (IOException e) {
+				Log.i( "Prog", "Clearing UART Failed" );
+				e.printStackTrace();
+			}
+			
+			Log.i("flow", "SocketConnect: Sending command playlist" );
+			myApp.new SocketSend().execute("playlist");
+
+			//if(mode == DE2)
+			//	new SocketSend().execute("playlist");
+			//else
+			//	new SocketSend().execute("02.01.Super MArio.kai.5.64.02.LOL.new artist.4.22.");
+		}
+	}
+	
 	private final static int ONE_BYTE = 1;
 	private final static int MAX_BYTES = 255;
 	private boolean initialized = false;
 	private ArrayList<String[]> mainPlaylist;
+	SocketConnect cc;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState){
+		Log.i("flow", "LoadingScreenActivity: onCreate" );
+		
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -48,32 +119,40 @@ public class LoadingScreenActivity  extends Activity {
 		.penaltyLog().build());
 		
 		MyApplication app = (MyApplication)LoadingScreenActivity.this.getApplication();
-		app.new SocketConnect().execute((Void) null);
+		mainPlaylist = new ArrayList<String[]>();
+		
+		Log.i("flow", "LoadingScreenActivity: Calling SocketConnect().execute()" );
+		cc = (SocketConnect) new SocketConnect().execute((Void) null);
+		Log.i("flow", "LoadingScreenActivity: SocketConnect().execute is done" );
+		
 		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 		Timer tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
-		
-		
-		
+		Log.i("flow", "LoadingScreenActivity: Scheduled ReadTimerTask" );	
 	}
 	
+	/*
 	@Override
 	public void onResume()
 	{
-		while(initialized == false);
+		try {
+			while ( !initialized )
+				cc.wait();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		Log.i("flow", "LoadingScreenActivity: onResume" );
+		//while(initialized == false);
+		Log.i("flow", "LoadingScreenActivity: onResume after while loop" );	
 		Toast.makeText(this, "Initialized", Toast.LENGTH_SHORT).show();
-		
-		Intent resultIntent = new Intent();
-		resultIntent.putExtra("FromLoading", mainPlaylist);
-		setResult(Activity.RESULT_OK, resultIntent);
-		finish();
 	}
+	*/
+	
 	
 	public class TCPReadTimerTask extends TimerTask 
 	{		
 		public void run() 
 		{
-			
 			Log.i("Prog", "Read Timer Task started");
 
 			MyApplication app = (MyApplication) getApplication();
@@ -193,6 +272,14 @@ public class LoadingScreenActivity  extends Activity {
 									int count = Integer.parseInt(buffer[0]);
 									initializeList(count, playlist);
 									initialized = true;
+									
+									
+									Intent resultIntent = new Intent();
+									resultIntent.putExtra("FromLoading", mainPlaylist);
+									setResult(Activity.RESULT_OK, resultIntent);
+									finish();
+									
+									
 									//text.setText("Press play");
 								} /*
 								else if ( command.compareTo( "P" ) == 0 )
