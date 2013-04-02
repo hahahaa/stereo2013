@@ -1,0 +1,3 @@
+<resources>
+    <integer name = "buttonSize">256</integer>
+</resources>
