@@ -849,8 +849,18 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	}
 	
 	/* Debugging purpose */
-	public void debugHandShakedLongMessage(View view) {
+	public void debugHandShakedLongMessage(View view) 
+	{
 		app.new SocketSend().execute("M");
+	}
+	
+	public void openAdvancedPlaylist(View view)
+	{
+		showStatus.setText("Opening advanced playlist");
+		showStatus.show();
+		Intent intent = new Intent(this, LoadingScreenActivity.class);
+		intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+		//startActivityForResult(intent, loading);
 	}
 
 }
