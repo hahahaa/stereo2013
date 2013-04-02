@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -268,14 +269,15 @@ public class LoadingScreenActivity  extends Activity {
 									for (int k = 0; k < buffer.length; k++)
 										Log.i("buffer", buffer[k]);
 									
-									String[] playlist = buffer;
-									int count = Integer.parseInt(buffer[0]);
-									initializeList(count, playlist);
+									String[] playlist = Arrays.copyOfRange(buffer, 1, buffer.length);
+									//int count = Integer.parseInt(buffer[0]);
+									//initializeList(count, playlist);
 									initialized = true;
 									
 									
 									Intent resultIntent = new Intent();
-									resultIntent.putExtra("FromLoading", mainPlaylist);
+									
+									resultIntent.putExtra("FromLoading", playlist);
 									setResult(Activity.RESULT_OK, resultIntent);
 									finish();
 									
