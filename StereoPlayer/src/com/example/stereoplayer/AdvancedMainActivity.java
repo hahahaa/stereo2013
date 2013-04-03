@@ -291,7 +291,6 @@ public class AdvancedMainActivity extends Activity
 				for (int i =0; i < result.length; i++)
 					Log.i("load",result[i]);
 				initializeListView(result);
-				
 			}
 		}
 		else if (resultCode == Activity.RESULT_CANCELED)
@@ -613,6 +612,11 @@ public class AdvancedMainActivity extends Activity
 		currTimeMin.setText( Integer.toString( currMin ) );
 		currTimeSec.setText( currSecStr );
 	}
+	
+	public void clearTCP()
+	{
+		
+	}
 
 	public void openPiano(View view)
 	{
@@ -641,6 +645,38 @@ public class AdvancedMainActivity extends Activity
 				return true;
 			}
 			return false;
+		}
+	}
+	
+	
+	public class TCPClearTask extends TimerTask 
+	{		
+		public void run() 
+		{
+			MyApplication app = (MyApplication) getApplication();
+			if (app.sock != null && app.sock.isConnected() && !app.sock.isClosed()) 
+			{
+				try 
+				{
+					InputStream in = app.sock.getInputStream();
+					int bytes_avail = in.available();
+
+					if (bytes_avail > 0) 
+					{						
+						Log.i( "Clear", Integer.toString( bytes_avail ) );
+						
+						byte buf[] = new byte[ONE_BYTE];
+						in.read(buf);
+						String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
+						
+						Log.i( "Clear", msg );
+					}
+				} 
+				catch (IOException e) 
+				{
+					Log.i( "Exception", "TCPClearTask Failed." );
+				}
+			}
 		}
 	}
 }
