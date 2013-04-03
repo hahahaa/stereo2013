@@ -126,7 +126,7 @@ void clearMiddleManBuffer();
 /* Song Functions */
 int playSong( short int file_handle, int state, int length );
 void stopSong( short int file_handle );
-int nextSong( int next );
+int nextSong( int next, int size );
 void audio_isr( void * context, unsigned int irq_id );
 int findSong( SongDetail** list, int numSong, char* id );
 void readTone( unsigned int* tone, int tone_size, char* name);
@@ -186,6 +186,7 @@ int main()
 	int k;
 	for(k = 0; k < numSongs; k++)
 		playList[k] = k;
+	playListSize = numSongs;
 
 	IOWR_8DIRECT(leds, 0, 0xFF);
 
@@ -366,6 +367,12 @@ int updateStateFromUART( int prevState )
 		sendHandShakedLongMessageToMiddleMan( 'V', buf );
 		free( buf );
 	}
+	else if( strcmp(temp, "list") == 0)
+	{
+		receivePlayListFromMiddleMan( playList , &playListSize );
+		currSong = 0;
+
+	}
 	else if( strcmp(temp, "playlist") == 0)
 	{
 		printf("hehhehehehe\n");
@@ -454,12 +461,12 @@ int updateStateWhileStop()
 	}
 	else if(key == 0x2 || returnState == NEXT_PLAY)
 	{
-		currSong = nextSong(1);
+		currSong = nextSong( 1, playListSize );
 		return NEXT_PLAY;
 	}
 	else if(key == 0x1 || returnState == PREV_PLAY)
 	{
-		currSong = nextSong(0);
+		currSong = nextSong( 0, playListSize );
 		return PREV_PLAY;
 	}
 	return returnState;
@@ -506,12 +513,12 @@ int runPlayingState( SongDetail** list )
 
 	if(state == NEXT_PLAY || state == PLAYING_NORMAL)
 	{
-		currSong = nextSong(1);
+		currSong = nextSong( 1, playListSize );
 		return PLAYING_NORMAL;
 	}
 	else if(state == PREV_PLAY)
 	{
-		currSong = nextSong(0);
+		currSong = nextSong( 0, playListSize );
 		return PLAYING_NORMAL;
 	}
 	else
@@ -712,17 +719,17 @@ void stopSong( short int file_handle )
  * if next == 1, play the next song
  * otherwise, play a random song
  */
-int nextSong( int next )
+int nextSong( int next, int size )
 {
 	int tmp = 0;
 	if(isListChanged == 1)
 	{
 		if(shuffle_flag == 1)
-			shufflePlayList( playList, numSongs );
+			shufflePlayList( playList, size );
 		else
 		{
 			int i;
-			for(i = 0; i < numSongs; i++)
+			for(i = 0; i < size; i++)
 				playList[i] = i;
 		}
 		isListChanged = 0;
@@ -732,20 +739,20 @@ int nextSong( int next )
 	{
 		if(next == 1)
 		{
-			tmp = (currSong + 1) % numSongs;
+			tmp = (currSong + 1) % size;
 		}
 		else if(next == 0)
 		{
 			if(currSong == 0)
-				tmp = numSongs - 1;
+				tmp = size - 1;
 			else
-				tmp  = (currSong - 1) % numSongs;
+				tmp  = (currSong - 1) % size;
 		}
 		else
 		{
 			tmp = currSong;
 			while(tmp == currSong)
-				tmp = rand() % numSongs;
+				tmp = rand() % size;
 		}
 	}
 	else
