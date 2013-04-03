@@ -154,7 +154,8 @@ public class AdvancedMainActivity extends Activity
 									Log.i("indexNumber", Integer.toString(songIndex));
 									text.setText("Playing: " + mainPlaylist.get(songIndex)[1] );
 
-									setupTime( Integer.parseInt( mainPlaylist.get(songIndex)[4] ) );
+									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
+									setupTime( songLength );
 								}
 								else if ( command.compareTo( "I" ) == 0 )
 								{
@@ -238,8 +239,13 @@ public class AdvancedMainActivity extends Activity
 		rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
 		songVolume = intent.getIntExtra("volume", 4);
 		currentSongPositionInTime = intent.getIntExtra("progress", 0);
+		
 		initializeList(rawPlaylist);
 		updateProgressBar();
+		int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
+		setupTime( songLength );
+		updateTime( currentSongPositionInTime, songLength );
+		
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
 	}
 
@@ -584,6 +590,8 @@ public class AdvancedMainActivity extends Activity
 
 		MaxTimeMin.setText( Integer.toString( maxMin ) );
 		MaxTimeSec.setText( maxSecStr );
+		
+		updateTime( 0, songLength );
 	}
 
 	/* Updates the current time of the current song */
