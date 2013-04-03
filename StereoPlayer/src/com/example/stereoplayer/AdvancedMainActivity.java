@@ -126,7 +126,8 @@ public class AdvancedMainActivity extends Activity
 								} 
 								else if (command.compareTo("S") == 0) 
 								{
-									text.setText("Stoppped");
+									text.setText("Stopped");
+									currentSongPositionInTime = 0;
 								} 
 								else if (command.compareTo("U") == 0) 
 								{
@@ -144,6 +145,8 @@ public class AdvancedMainActivity extends Activity
 
 									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
 									updateTime( currentSongPositionInTime, songLength );
+									
+									text.setText("Playing: " + mainPlaylist.get(songIndex)[1]);
 
 									Log.i("Prog", "currentSongPosition is: " + currentSongPositionInTime );
 								}
@@ -170,7 +173,7 @@ public class AdvancedMainActivity extends Activity
 									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
 									setupTime( songLength );
 									updateTime( currentSongPositionInTime, songLength );
-									text.setText("Playing: " + mainPlaylist.get(songIndex)[1]);
+									//text.setText("Playing: " + mainPlaylist.get(songIndex)[1]);
 								}
 								else
 								{
@@ -303,7 +306,10 @@ public class AdvancedMainActivity extends Activity
 				Toast.makeText(this, "playlist test loaded", Toast.LENGTH_SHORT).show();
 				for (int i =0; i < result.length; i++)
 					Log.i("load",result[i]);
-				initializeListViewFromDragDrop(result);
+				//initializeListViewFromDragDrop(result);
+				currentSongPositionInTime = 0;
+				TextView text = (TextView) findViewById(R.id.viewText2);
+				text.setText( "Stopped" );
 			}
 		}
 		else if (resultCode == Activity.RESULT_CANCELED)
@@ -627,11 +633,6 @@ public class AdvancedMainActivity extends Activity
 
 		currTimeMin.setText( Integer.toString( currMin ) );
 		currTimeSec.setText( currSecStr );
-	}
-	
-	public void clearTCP()
-	{
-		
 	}
 
 	public void openPiano(View view)
