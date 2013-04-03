@@ -32,11 +32,12 @@ public class Piano extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_piano);
-		//vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
 				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		setContentView(R.layout.activity_piano);
+		//vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+		
 		//addListenerOnButton();
 		app = (MyApplication) getApplication();
 	}
