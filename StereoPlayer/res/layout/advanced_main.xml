@@ -194,6 +194,14 @@
                 android:layout_height="wrap_content"
                 android:onClick="openDragDropPlaylist"
                 android:text="DragDrop" />
+
+            <Button
+                android:id="@+id/button9"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Piano"
+                android:onClick="openPiano" />
             
             </LinearLayout>
         </LinearLayout>

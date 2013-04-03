@@ -587,4 +587,12 @@ public class AdvancedMainActivity extends Activity
 		currTimeMin.setText( Integer.toString( currMin ) );
 		currTimeSec.setText( currSecStr );
 	}
+	
+	public void openPiano(View view)
+	{
+		Intent intent = new Intent(this, Piano.class);
+		//intent.putExtra("rawPlaylist", rawPlaylist);
+		
+		startActivity(intent);
+	}
 }
