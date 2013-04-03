@@ -74,7 +74,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 						String data = new String();
 						Log.i( "HandShake", "Command got is: " + msg );
 
-						if (msg.compareTo("M") == 0 || msg.compareTo("V")==0)
+						if (msg.compareTo("M") == 0 || msg.compareTo("V")==0 || msg.compareTo("O") == 0)
 						{
 							while ( in.available() == 0 );
 							bytes_avail = in.available();
@@ -178,20 +178,12 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 								} 
 								else if (command.compareTo("O") == 0) 
 								{
-									Log.i( "Modee", "Got O: " );
-
-									ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
-									int songLength = Integer.parseInt(mainPlaylist.get(songIndex)[4]);
-									double progressInterval = 100.0 / songLength;
-
-									currentSongPositionInTime += progressInterval;
-									bar.setProgress( (int) currentSongPositionInTime );
-
-									//updateTime( currentSongPositionInTime, songLength );
-
-									Log.i("Prog", "Progress increased by " + progressInterval );
-									Log.i("Prog", "currentSongPosition is: " + currentSongPositionInTime );
-
+									currentSongPositionInTime = Integer.parseInt( message );
+									
+									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar2);
+									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
+									int currentProgress = (int) ( ((double) currentSongPositionInTime) / (double) songLength * 100.0 );
+									pb.setProgress( currentProgress );
 								}
 								else if (command.compareTo("M") == 0) 
 								{
