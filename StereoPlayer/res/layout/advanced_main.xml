@@ -198,6 +198,7 @@
     </LinearLayout>
 
 
+     
    	 <ImageView
    	     android:id="@+id/imageView3"
    	     android:layout_width="wrap_content"
@@ -239,18 +240,37 @@
         android:layout_height="match_parent"
         android:orientation="vertical" >
 
+        <TextView
+            android:id="@+id/viewText1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#222"
+            android:ems="10"
+            android:text="Volume = 4"
+            android:textColor="#FFF"
+            android:textSize="30dp" />
+
+        <TextView
+            android:id="@+id/viewText2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:ems="10"
+            android:linksClickable="true"
+            android:longClickable="true"
+            android:onClick="sendMessage"
+            android:text="@string/song1"
+            android:textSize="30dp" >
+        </TextView>
+
+
         <ListView
             android:id="@+id/listView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
     </LinearLayout>
 
-</LinearLayout>
-
-
-
-
-<!-- android:onClick="sendMessage" -->
+</LinearLayout><!-- android:onClick="sendMessage" -->
 
 
 
