@@ -28,12 +28,12 @@ public class AdvancedMainActivity extends Activity
 {
 	/* Set this to true if debugging saving and loading play list and/or rating list*/
 	boolean Debug = false;
-	
+
 	/* Constants */
 	final static int ONE_BYTE = 1;
 	final static int MAX_BYTES = 255;
 	final static int dragDrop = 3;
-	
+
 	/* Variables */	
 	private MyApplication app;
 	private ArrayList<String[]> mainPlaylist;
@@ -42,7 +42,7 @@ public class AdvancedMainActivity extends Activity
 	private int songIndex;
 	private int songVolume;
 	private int currentSongPositionInTime;
-	
+
 	public class TCPReadTimerTask extends TimerTask 
 	{		
 		public void run() 
@@ -54,31 +54,31 @@ public class AdvancedMainActivity extends Activity
 				{
 					InputStream in = app.sock.getInputStream();
 					int bytes_avail = in.available();
-					
+
 					if (bytes_avail > 0) 
 					{						
 						byte buf[] = new byte[ONE_BYTE];
 						in.read(buf);
 						String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
 						String data = new String();
-					
+
 						if (msg.compareTo("M") == 0 || msg.compareTo("I") == 0 || msg.compareTo("O") == 0 )
 						{							
 							while ( in.available() == 0 );
 							bytes_avail = in.available();
-							
+
 							byte buffer[] = new byte[ONE_BYTE];
 							in.read(buffer);
 							int numBytesOfNumber = buffer[0];
-							
+
 							buffer = new byte[numBytesOfNumber];
-							
+
 							while( in.available() < numBytesOfNumber );
 							in.read(buffer);
 							String temp = new String( buffer, 0, numBytesOfNumber, "US-ASCII" );
-							
+
 							int numBytesOfData = Integer.parseInt( temp );
-							
+
 							buffer = new byte[ONE_BYTE];
 							for ( int i = 0; i < numBytesOfData; )
 							{
@@ -90,26 +90,26 @@ public class AdvancedMainActivity extends Activity
 								}
 							}
 						}
-						
+
 						final String command = new String(msg);
 						final String message = new String( data );
 
 						Log.i("AdvancedMain", "Handshake - Commands is: " + command);
 						Log.i("AdvancedMain", "Handshake - message is: " + message);
-						
+
 						if (msg.compareTo("M") == 0)
 						{
 							Log.i("Shuffle", "String data is: " + data);
 							Log.i("Shuffle", "String message is: " + message);
 						}
-						
+
 						runOnUiThread(new Runnable() 
 						{
 							public void run() 
 							{								
 								TextView volumeT = (TextView) findViewById(R.id.viewText1);
 								TextView text = (TextView) findViewById(R.id.viewText2);
-								
+
 								if ( command.compareTo( "P" ) == 0 )
 								{
 									text.setText("Playing: " + mainPlaylist.get(songIndex)[1]);
@@ -133,9 +133,9 @@ public class AdvancedMainActivity extends Activity
 								else if (command.compareTo("O") == 0) 
 								{
 									currentSongPositionInTime = Integer.parseInt( message );
-									
+
 									updateProgressBar();
-									
+
 									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
 									updateTime( currentSongPositionInTime, songLength );
 
@@ -144,14 +144,14 @@ public class AdvancedMainActivity extends Activity
 								else if (command.compareTo("M") == 0) 
 								{
 									Log.i( "AdvancedMain", "Successfully reached here" );
-									
+
 									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
 									pb.setProgress( 0 );
-									
+
 									songIndex = Integer.parseInt( message );
 									Log.i("indexNumber", Integer.toString(songIndex));
 									text.setText("Playing: " + mainPlaylist.get(songIndex)[1] );
-									
+
 									setupTime( Integer.parseInt( mainPlaylist.get(songIndex)[4] ) );
 								}
 								else if ( command.compareTo( "I" ) == 0 )
@@ -161,12 +161,12 @@ public class AdvancedMainActivity extends Activity
 								}
 								else
 								{
-									
+
 								}
 							}
 						});
 					}
-					
+
 					/* Debugging purpose */
 					if ( Debug )
 					{
@@ -175,36 +175,36 @@ public class AdvancedMainActivity extends Activity
 						{
 							list[i] = Integer.toString( i );
 						}
-						
+
 						/* playlist */
 						Log.i( "list", "Before save playList" );
 						savePlayList( "playList.txt", list );
 						Log.i( "list", "After save playList and Before load PlayList" );
-						
+
 						list = loadPlayList( "playList.txt" );
 						Log.i( "list", "After Load playList" );
-						
+
 						for ( int i = 0; i < list.length; i++ )
 							Log.i( "list", list[i] );
-						
+
 						sendCurrentPlayListToDE2( list );
-						
+
 						/* rating */
 						for ( int i = 0; i < 100; i++ )
 						{
 							list[i] = Integer.toString( 99-i );
 						}
-						
+
 						Log.i( "list", "Before save saveRating" );
 						saveRating( list );
 						Log.i( "list", "After save saveRating and Before load saveRating" );
-						
+
 						list = loadRating( );
 						Log.i( "list", "After Load saveRating" );
-						
+
 						for ( int i = 0; i < list.length; i++ )
 							Log.i( "list", list[i] );
-						
+
 						Debug = false;
 					}
 				} 
@@ -215,7 +215,7 @@ public class AdvancedMainActivity extends Activity
 			}
 		}
 	}
-	
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -227,11 +227,11 @@ public class AdvancedMainActivity extends Activity
 
 		app = (MyApplication)AdvancedMainActivity.this.getApplication();
 		songVolume = 0;
-		
+
 		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
 		.detectDiskReads().detectDiskWrites().detectNetwork()
 		.penaltyLog().build());
-		
+
 		Intent intent = getIntent();
 		rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
 		songVolume = intent.getIntExtra("volume", 4);
@@ -240,7 +240,7 @@ public class AdvancedMainActivity extends Activity
 		updateProgressBar();
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
 	}
-	
+
 	@Override
 	public void onResume()
 	{
@@ -248,38 +248,45 @@ public class AdvancedMainActivity extends Activity
 		tcp_task = new TCPReadTimerTask();
 		Timer tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
-		
+
 		getIndex();
 	}
-	
+
 	@Override
 	public void onPause()
 	{
 		tcp_task.cancel();
 		super.onPause();
-		
+
 	}
-	
+
 	public void openDragDropPlaylist(View view)
 	{
 		Intent intent = new Intent(this, DragDropPlaylist.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);
-		
+
 		startActivityForResult(intent, dragDrop);
 	}
-	
+
 	@Override 
 	public void onActivityResult(int requestCode, int resultCode, Intent data) 
 	{   
 		super.onActivityResult(requestCode, resultCode, data);
 		Toast.makeText(this, "backFromDrag", Toast.LENGTH_SHORT).show();
+		String[] result = loadList("test");
+		if (result != null)
+		{
+			Toast.makeText(this, "playlist test loaded", Toast.LENGTH_SHORT).show();
+			for (int i =0; i < result.length; i++)
+				Log.i("load",result[i]);
+		}
 	}
-	
+
 	public void initializeList(String[] playlist)
 	{
 		Log.i("AdvancedMain", "SimpleMain - initializing Song List");
 		mainPlaylist = new ArrayList<String[]>();
-		
+
 		for (int i = 0; i + 5 <= playlist.length; i += 5) 
 		{
 			String[] newSong = new String[5];
@@ -290,10 +297,10 @@ public class AdvancedMainActivity extends Activity
 			newSong[4]	= playlist[i + 4];
 			mainPlaylist.add(newSong);
 		}
-		
+
 		Log.i("AdvancedMain", "SimpleMain - Finished initializing Song List");
 	}
-	
+
 	public void playPauseSong(View view) {
 		app.new SocketSend().execute("P");
 	}
@@ -317,34 +324,34 @@ public class AdvancedMainActivity extends Activity
 	public void downVolume(View view) {
 		app.new SocketSend().execute("D");
 	}
-	
+
 	/* Gets the current song index from DE2 */
 	public void getIndex() {
 		app.new SocketSend().execute("I");
 	}
-	
+
 	/* Toggles mode from Order-Mode/Shuffle-Mode */
 	public void onClickPlayOrderMode( View view )
 	{
 		boolean isShuffle = ((ToggleButton) view).isChecked();
-		
+
 		if ( isShuffle )
 			app.new SocketSend().execute("H");
 		else
 			app.new SocketSend().execute("h");
 	}
-	
+
 	/* Toggles mode from Repeat-One-Song-Mode/Repeat-Whole-List-Mode */
 	public void onClickPlayRepeatMode( View view )
 	{
 		boolean isRepeatOneSong = ((ToggleButton) view).isChecked();
-		
+
 		if ( isRepeatOneSong )
 			app.new SocketSend().execute("R");
 		else
 			app.new SocketSend().execute("r");
 	}
-	
+
 	/* Sends a playList to DE2
 	 * returns 0 if successful, otherwise -1
 	 * Pre: playList != null
@@ -362,14 +369,14 @@ public class AdvancedMainActivity extends Activity
 			Log.i( "Exception", "app.sock.getInputStream() failed in sendCurrentPlayListToDE2" );
 			return -1;
 		}
-		
+
 		int listLength = playList.length;
 		Log.i( "list", "Start sending playList" );
 		//new SocketSend().execute( Integer.toString( ( Integer.toString( listLength ) ).length() ) );
 		//Log.i( "list", "Sending: " +  Integer.toString( ( Integer.toString( listLength ) ).length() ) );
 		app.new SocketSend().execute( Integer.toString( listLength ) );
 		Log.i( "list", "Sending: " +  Integer.toString( listLength ) );
-		
+
 		for ( int i = 0; i < listLength; i++ )
 		{
 			if ( i != 0 && i % 30 == 0 )	// for HandShake
@@ -377,11 +384,11 @@ public class AdvancedMainActivity extends Activity
 				try 
 				{
 					byte buf[] = new byte[ONE_BYTE];
-										
+
 					app.new SocketSend().execute( "H" );
 					Log.i( "list", "Sending H" );
-					
-					
+
+
 					/* Android loopback mode purpose */
 					/*
 					String msg = new String();
@@ -393,17 +400,17 @@ public class AdvancedMainActivity extends Activity
 							msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
 						}
 					}
-					*/
-					
+					 */
+
 					/* Real Purpose */
 					while ( in.available() == 0 );
 					Log.i( "list", "Got message from DE2" );
-					
+
 					in.read( buf );
 					String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
-					
+
 					Log.i( "list", "Message got is: " + msg );
-					
+
 					if ( msg.compareTo( "H" ) != 0 )
 					{
 						Log.i( "list", "Invalid message came from DE2 in sendCurrentPlayListToDE2" );
@@ -417,7 +424,7 @@ public class AdvancedMainActivity extends Activity
 					return -1;
 				}		
 			}
-				
+
 			//new SocketSend().execute( Integer.toString( playList[i].length() ) );
 			//Log.i( "list", "Sending: " +  Integer.toString( playList[i].length() ) );
 			app.new SocketSend().execute( playList[i] );
@@ -426,31 +433,31 @@ public class AdvancedMainActivity extends Activity
 		Log.i( "list", "Done sending playList" );
 		return 0;
 	}
-	
+
 	/* Wrapper function for storing rating list */
 	public void saveRating( String[] rating )
 	{
 		saveList( "Rating.txt", rating );
 	}
-	
+
 	/* Wrapper function for loading rating list */
 	public String[] loadRating()
 	{
 		return loadList( "Rating.txt" );
 	}
-	
+
 	/* Wrapper function for saving play list */
 	public void savePlayList( String name, String[] str )
 	{
 		saveList( name, str );
 	}
-	
+
 	/* Wrapper function for loading play list */
 	public String[] loadPlayList( String name )
 	{
 		return loadList( name );
 	}
-	
+
 	/* Stores a list of string into internal storage as a file
 	 * @name is the name of the file
 	 * @str is the list of strings to store
@@ -459,11 +466,11 @@ public class AdvancedMainActivity extends Activity
 	public void saveList( String name, String[] str )
 	{
 		FileOutputStream fos = null;
-		
+
 		try 
 		{
 			fos = openFileOutput( name, Context.MODE_PRIVATE );
-			
+
 			for ( int i = 0; i < str.length; i++ )
 			{
 				fos.write( str[i].getBytes() );
@@ -490,21 +497,22 @@ public class AdvancedMainActivity extends Activity
 			}
 		}
 	}
-	
+
 	/* Loads a list of string from the internal storage
 	 * @name is the name of the file
 	 */
 	public String[] loadList( String name )
 	{
+
 		FileInputStream fis = null;
 		try 
 		{
 			fis = openFileInput( name );
-			
+
 			byte[] buf = new byte[MAX_BYTES];
 			String temp = new String();
 			int i;
-			
+
 			int bytesRead;
 			while ( (bytesRead = fis.read( buf )) != -1 )
 			{
@@ -512,12 +520,12 @@ public class AdvancedMainActivity extends Activity
 				temp = temp.concat( new String( buf, 0, bytesRead, "US-ASCII" ));			
 			}
 			Log.i( "playList", "bytesRead is: " + bytesRead );
-			
+
 			String[] str = temp.split("\\.");
-			
+
 			for ( i = 0; i < str.length; i++)
 				Log.i( "ss", "str[" + i + " ]: " + str[i] );
-			
+
 			return str;
 		} 
 		catch (FileNotFoundException e) 
@@ -539,10 +547,10 @@ public class AdvancedMainActivity extends Activity
 				Log.i( "Exception", "Failed close file: " + name + "." );
 			}
 		}
-		
+
 		return null;
 	}
-	
+
 	public void updateProgressBar()
 	{
 		ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
@@ -550,49 +558,49 @@ public class AdvancedMainActivity extends Activity
 		int currentProgress = (int) ( ((double) currentSongPositionInTime) / (double) songLength * 100.0 );
 		pb.setProgress( currentProgress );
 	}
-	
+
 	/* Initializes the max time of the current song */
 	public void setupTime( int songLength )
 	{
 		TextView MaxTimeMin = (TextView) findViewById( R.id.textView5 );
 		TextView MaxTimeSec = (TextView) findViewById( R.id.textView7 );
-		
+
 		int maxMin = songLength / 60;
 		int maxSec = songLength % 60;
-		
+
 		String maxSecStr = Integer.toString( maxSec );
 		if ( maxSec < 10 )
 			maxSecStr = "0" + maxSecStr;
-		
+
 		MaxTimeMin.setText( Integer.toString( maxMin ) );
 		MaxTimeSec.setText( maxSecStr );
 	}
-	
+
 	/* Updates the current time of the current song */
 	public void updateTime( int currentSongPositionInTime, int songLength )
 	{
 		TextView currTimeMin = (TextView) findViewById( R.id.textView1 );
 		TextView currTimeSec = (TextView) findViewById( R.id.textView3 );
-		
+
 		if ( currentSongPositionInTime > songLength )
 			return;
-		
+
 		int currMin = currentSongPositionInTime / 60;
 		int currSec = currentSongPositionInTime % 60;
-		
+
 		String currSecStr = Integer.toString( currSec );
 		if ( currSec < 10 )
 			currSecStr = "0" + currSecStr;
-		
+
 		currTimeMin.setText( Integer.toString( currMin ) );
 		currTimeSec.setText( currSecStr );
 	}
-	
+
 	public void openPiano(View view)
 	{
 		Intent intent = new Intent(this, Piano.class);
 		//intent.putExtra("rawPlaylist", rawPlaylist);
-		
+
 		startActivity(intent);
 	}
 }
