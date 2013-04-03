@@ -14,12 +14,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
@@ -48,6 +50,7 @@ public class AdvancedMainActivity extends Activity
 	private int songVolume;
 	private int currentSongPositionInTime;
 	private ArrayList<HashMap<String, String>> list;
+	private Toast showStatus;
 
 	public class TCPReadTimerTask extends TimerTask 
 	{		
@@ -244,6 +247,8 @@ public class AdvancedMainActivity extends Activity
 		app = (MyApplication)AdvancedMainActivity.this.getApplication();
 		songVolume = 0;
 
+		showStatus = Toast.makeText(this, "", Toast.LENGTH_SHORT);
+		
 		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
 		.detectDiskReads().detectDiskWrites().detectNetwork()
 		.penaltyLog().build());
@@ -651,7 +656,6 @@ public class AdvancedMainActivity extends Activity
 
 	public void initializeListViewFromDragDrop(String[] result)
 	{
-		ArrayList<String[]> newPlaylist = new ArrayList<String[]>();
 		String[] newRawPlaylist = new String [result.length * 5];
 		int iterator = 0;
 		
@@ -702,6 +706,7 @@ public class AdvancedMainActivity extends Activity
 			item.put( "Song", mSongs[i]);
 			item.put( "Artist",mArtists[i] );
 			item.put("Rating", mRatings[i]);
+			item.put("Id", mId[i]);
 			list.add( item );
 		}
 		
@@ -711,6 +716,30 @@ public class AdvancedMainActivity extends Activity
 		
 		ListView listView = (ListView) findViewById(R.id.listView);
 		listView.setAdapter(adapter);
+		
+		listView.setOnItemClickListener(new AdapterView.OnItemClickListener() 
+		{
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) 
+			{	
+				
+				Object obj = parent.getItemAtPosition(position);
+
+				
+				Drawable block = getWallpaper();
+				ListView listView = (ListView) findViewById(R.id.listView);
+				listView.setSelector(block);
+				//listView.setSelector(R.drawable.selectorv2);
+
+				@SuppressWarnings("unchecked")
+				HashMap<String,String> item = (HashMap<String, String>) obj;
+				showStatus.setText(item.get("Id"));
+				showStatus.show();
+				//Toast.makeText(this, item.get("Song"), Toast.LENGTH_SHORT).show();
+				//new SocketSend().execute(item.get("Song") );
+			}
+		}
+				);
 		
 	}
 
