@@ -127,19 +127,7 @@ public class AdvancedMainActivity extends Activity
 								else if (command.compareTo("D") == 0) 
 								{
 									volumeT.setText("Volume = " + Integer.toString(songVolume));
-								} 
-								/* Deprecated */
-								else if (command.compareTo("N") == 0) 
-								{
-									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
-									pb.setProgress( 0 );
 								}
-								/* Deprecated */
-								else if (command.compareTo("L") == 0) 
-								{
-									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
-									pb.setProgress( 0 );
-								} 
 								else if (command.compareTo("O") == 0) 
 								{
 									currentSongPositionInTime = Integer.parseInt( message );
