@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.os.Vibrator;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.widget.Button;
@@ -31,15 +33,19 @@ public class Piano extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_piano);
-		vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
-		addListenerOnButton();
+		//vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		//addListenerOnButton();
 		app = (MyApplication) getApplication();
 	}
 
 	public void playDoD(View view)
 	{
+		//Toast.make
 		app.new SocketSend().execute("DoD");
-		vibrator.vibrate(300);
+		//vibrator.vibrate(300);
 	}
 
 	public void playRe(View view)
@@ -79,7 +85,7 @@ public class Piano extends Activity {
 
 
 
-	public void addListenerOnButton() {
+	/*public void addListenerOnButton() {
 
 
 		DoD_btn = (Button) findViewById(R.id.DoD);
@@ -93,7 +99,7 @@ public class Piano extends Activity {
 
 
 
-		/*	DoD_btn.setOnTouchListener(new OnTouchListener(){
+			DoD_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
@@ -111,7 +117,7 @@ public class Piano extends Activity {
 				return false;
 			}
 
-		});*/
+		});
 
 		Re_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
@@ -232,7 +238,7 @@ public class Piano extends Activity {
 		});
 
 
-	}
+	}*/
 
 
 }
