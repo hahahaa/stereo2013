@@ -685,7 +685,6 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		Intent intent = new Intent(this, AdvancedMainActivity.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);
 		intent.putExtra("volume", songVolume);
-		intent.putExtra("index", songIndex);
 		intent.putExtra("progress", currentSongPositionInTime);
 		
 		tcp_timer.cancel();
