@@ -253,7 +253,7 @@ public class AdvancedMainActivity extends Activity
 		
 	}
 	
-	public void openDragDropPlaylist()
+	public void openDragDropPlaylist(View view)
 	{
 		Intent intent = new Intent(this, DragDropPlaylist.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);

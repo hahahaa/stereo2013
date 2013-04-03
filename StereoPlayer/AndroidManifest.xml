@@ -26,6 +26,7 @@
         </activity>
         <activity android:name=".LoadingScreenActivity" />
         <activity android:name=".AdvancedMainActivity" />
+        <activity android:name=".DragDropPlaylist" />
     </application>
 
 </manifest>
