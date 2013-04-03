@@ -688,6 +688,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		intent.putExtra("progress", currentSongPositionInTime);
 		
 		tcp_timer.cancel();
+		//gestureDetector.c
 		//sgestureDetector.
 		startActivity(intent);
 	}
