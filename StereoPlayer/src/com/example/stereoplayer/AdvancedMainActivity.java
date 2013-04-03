@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -19,8 +20,10 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
+import android.widget.SimpleAdapter;
 import android.widget.SimpleAdapter.ViewBinder;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,6 +47,7 @@ public class AdvancedMainActivity extends Activity
 	private int songIndex;
 	private int songVolume;
 	private int currentSongPositionInTime;
+	private ArrayList<HashMap<String, String>> list;
 
 	public class TCPReadTimerTask extends TimerTask 
 	{		
@@ -239,14 +243,14 @@ public class AdvancedMainActivity extends Activity
 		rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
 		songVolume = intent.getIntExtra("volume", 4);
 		currentSongPositionInTime = intent.getIntExtra("progress", 0);
-		
-		initializeList(rawPlaylist);
+		if (mainPlaylist == null) initializeList(rawPlaylist);
 		updateProgressBar();
 		int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
 		setupTime( songLength );
 		updateTime( currentSongPositionInTime, songLength );
 		
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
+
 	}
 
 	@Override
@@ -290,8 +294,8 @@ public class AdvancedMainActivity extends Activity
 				Toast.makeText(this, "playlist test loaded", Toast.LENGTH_SHORT).show();
 				for (int i =0; i < result.length; i++)
 					Log.i("load",result[i]);
-				initializeListView(result);
-				
+				initializeListViewFromDragDrop(result);
+
 			}
 		}
 		else if (resultCode == Activity.RESULT_CANCELED)
@@ -300,6 +304,7 @@ public class AdvancedMainActivity extends Activity
 
 	public void initializeList(String[] playlist)
 	{
+
 		Log.i("AdvancedMain", "SimpleMain - initializing Song List");
 		mainPlaylist = new ArrayList<String[]>();
 
@@ -315,6 +320,8 @@ public class AdvancedMainActivity extends Activity
 		}
 
 		Log.i("AdvancedMain", "SimpleMain - Finished initializing Song List");
+		
+		loadPlaylistIntoListView(playlist);
 	}
 
 	public void playPauseSong(View view) {
@@ -621,12 +628,72 @@ public class AdvancedMainActivity extends Activity
 
 		startActivity(intent);
 	}
-	
-	public void initializeListView(String[] result)
+
+	public void initializeListViewFromDragDrop(String[] result)
 	{
+		ArrayList<String[]> newPlaylist = new ArrayList<String[]>();
+		String[] newRawPlaylist = new String [result.length * 5];
+		int iterator = 0;
 		
+		for (int i = 0; i < result.length; i++)
+		{
+			for (int j = 0; j < mainPlaylist.size(); j++)
+			{
+				if (mainPlaylist.get(j)[0].compareTo(result[i])==0)
+				{
+					newRawPlaylist[iterator] = mainPlaylist.get(j)[0];
+					newRawPlaylist[iterator+1] = mainPlaylist.get(j)[1];
+					newRawPlaylist[iterator+2] = mainPlaylist.get(j)[2];
+					newRawPlaylist[iterator+3] = mainPlaylist.get(j)[3];
+					newRawPlaylist[iterator+4] = mainPlaylist.get(j)[4];
+					iterator+=5;
+				}
+			}
+		}
+		
+		loadPlaylistIntoListView(newRawPlaylist);
 	}
 	
+	public void loadPlaylistIntoListView(String[] playlist)
+	{
+		list = new ArrayList<HashMap<String, String>>();
+		int songCount = playlist.length / 5;
+		String[] mSongs = new String[songCount];
+		String[] mArtists = new String[songCount];
+		String[] mRatings = new String[songCount];
+		String[] mId = new String[songCount];
+		String[] mLengths = new String[songCount];
+		
+		int currentIndex = 0;
+		
+		for (int iterator = 1; iterator + 5 <= playlist.length; iterator += 5) 
+		{
+			mId[currentIndex] = playlist[iterator];
+			mSongs[currentIndex] = playlist[iterator + 1];
+			mArtists[currentIndex] = playlist[iterator + 2];
+			mRatings[currentIndex] = playlist[iterator + 3];
+			mLengths[currentIndex]	= playlist[iterator + 4];
+			currentIndex++;
+		}
+		
+		for(int i=0; i<mSongs.length; i++)
+		{
+			HashMap<String,String> item = new HashMap<String,String>();
+			item.put( "Song", mSongs[i]);
+			item.put( "Artist",mArtists[i] );
+			item.put("Rating", mRatings[i]);
+			list.add( item );
+		}
+		
+		SimpleAdapter adapter = new SimpleAdapter( this, list, R.layout.mylistview1, new String[] { "Song","Artist","Rating" },
+				new int[] { R.id.textView1, R.id.textView2, R.id.rating1 });
+		adapter.setViewBinder(new MyBinder());
+		
+		ListView listView = (ListView) findViewById(R.id.listView);
+		listView.setAdapter(adapter);
+		
+	}
+
 	class MyBinder implements ViewBinder
 	{
 
