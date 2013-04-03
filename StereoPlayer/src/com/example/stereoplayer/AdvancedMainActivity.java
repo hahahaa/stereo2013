@@ -132,11 +132,9 @@ public class AdvancedMainActivity extends Activity
 								{
 									currentSongPositionInTime = Integer.parseInt( message );
 									
-									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
-									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
-									int currentProgress = (int) ( ((double) currentSongPositionInTime) / (double) songLength * 100.0 );
-									pb.setProgress( currentProgress );
+									updateProgressBar();
 									
+									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
 									updateTime( currentSongPositionInTime, songLength );
 
 									Log.i("Prog", "currentSongPosition is: " + currentSongPositionInTime );
@@ -241,9 +239,26 @@ public class AdvancedMainActivity extends Activity
 		Intent intent = getIntent();
 		rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
 		songVolume = intent.getIntExtra("volume", 4);
-		int progress = intent.getIntExtra("progress", 0);
+		currentSongPositionInTime = intent.getIntExtra("progress", 0);
 		initializeList(rawPlaylist);
+		updateProgressBar();
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
+	}
+	
+	@Override
+	public void onPause()
+	{
+		tcp_task.cancel();
+		super.onPause();
+		
+	}
+	
+	public void openDragDropPlaylist()
+	{
+		Intent intent = new Intent(this, DragDropPlaylist.class);
+		intent.putExtra("rawPlaylist", rawPlaylist);
+		
+		startActivity(intent);
 	}
 	
 	public void initializeList(String[] playlist)
@@ -512,6 +527,14 @@ public class AdvancedMainActivity extends Activity
 		}
 		
 		return null;
+	}
+	
+	public void updateProgressBar()
+	{
+		ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
+		int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
+		int currentProgress = (int) ( ((double) currentSongPositionInTime) / (double) songLength * 100.0 );
+		pb.setProgress( currentProgress );
 	}
 	
 	/* Initializes the max time of the current song */
