@@ -1,5 +1,8 @@
 package com.example.stereoplayer;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +11,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipDescription;
+import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -85,6 +89,19 @@ public class DragDropPlaylist extends Activity {
 			if(listName.compareTo("") == 0)
 				listName = "newlist1";
 		}
+	}
+	
+	/**
+	 * save the list on android
+	 */
+	public void saveNewList (View view) {
+		String name = nameEdit.getEditableText().toString();
+		String[] list = new String [newSongList.size()];
+		for(int i = 0; i < list.length; i++) {
+			// TODO  toArray 
+		}
+		
+		saveList( name, list );
 	}
 	
 	private static class MyDragShadowBuilder extends View.DragShadowBuilder {
@@ -204,6 +221,33 @@ public class DragDropPlaylist extends Activity {
 				return false;
 			}
 		} 
+	}
+	
+	private void saveList( String name, String[] str ) {
+		FileOutputStream fos = null;
+		
+		try {
+			fos = openFileOutput( name, Context.MODE_PRIVATE );
+			
+			for ( int i = 0; i < str.length; i++ ) {
+				fos.write( str[i].getBytes() );
+				fos.write( ".".getBytes() );
+			}
+		} 
+		catch (FileNotFoundException e) {
+			Log.i( "Exception", "File: " + name + " is not found." );
+		} 
+		catch (IOException e) {
+			Log.i( "Exception", "str.getBytes() threw an IOException for file: " + name + "." );
+		}
+		finally {
+			try {
+				fos.close();
+			} 
+			catch (IOException e) {
+				Log.i( "Exception", "Failed close file: " + name + "." );
+			}
+		}
 	}
 	
 	private ArrayList<HashMap<String, String>> gethardCodedList() {
