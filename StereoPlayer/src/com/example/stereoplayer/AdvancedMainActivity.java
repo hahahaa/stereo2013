@@ -680,7 +680,7 @@ public class AdvancedMainActivity extends Activity
 		
 		int currentIndex = 0;
 		
-		for (int iterator = 1; iterator + 5 <= playlist.length; iterator += 5) 
+		for (int iterator = 0; iterator + 5 <= playlist.length; iterator += 5) 
 		{
 			mId[currentIndex] = playlist[iterator];
 			mSongs[currentIndex] = playlist[iterator + 1];
@@ -716,7 +716,9 @@ public class AdvancedMainActivity extends Activity
 			if (arg0 instanceof RatingBar)
 			{
 				//String stringval = (String) arg1;
+				Log.i("arg1", (String) arg1);
 				float i = Float.parseFloat((String)arg1);
+				
 				RatingBar bar = (RatingBar) arg0;
 				bar.setRating(i);
 				return true;
