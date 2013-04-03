@@ -308,7 +308,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		showStatus = Toast.makeText(this, "", Toast.LENGTH_SHORT);
 		gestureDetector = new GestureDetector(this, this);
 
-		playing = false;
+		
 		songVolume = 4;
 		PositioningThread scale = new PositioningThread();
 		scale.run();
@@ -316,14 +316,33 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		MyApplication myApp = (MyApplication)SimpleMainActivity.this.getApplication();
 		app = myApp;
 
+		
+		
+
+	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
 		if (mainPlaylist == null )
 		{
+			playing = false;
 			Intent intent = new Intent(this, LoadingScreenActivity.class);
 			intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
 			startActivityForResult(intent, loading);
 		}
-		
-
+		else
+		{
+			showStatus.setText("I. AM. BACK.");
+			showStatus.show();
+			TextView songName = (TextView) findViewById(R.id.songName);
+			TextView artistName = (TextView) findViewById(R.id.artistName);
+			ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
+			TCPReadTimerTask tcp_task = new TCPReadTimerTask();
+			tcp_timer = new Timer();
+			tcp_timer.schedule(tcp_task, 0, 200);
+		}
 	}
 
 	@Override
@@ -579,9 +598,9 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 				rawPlaylist = playlist;
 				initializeList(playlist);
 
-				TCPReadTimerTask tcp_task = new TCPReadTimerTask();
+				/*TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 				tcp_timer = new Timer();
-				tcp_timer.schedule(tcp_task, 0, 200);
+				tcp_timer.schedule(tcp_task, 0, 200);*/
 				ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
 				bar.setProgress(0);
 				TextView songName = (TextView) findViewById(R.id.songName);
@@ -591,26 +610,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			} 
 			break; 
 		}
-		case (advanced) :
-		{
-			if (resultCode == Activity.RESULT_OK)
-			{
-				showStatus.setText("I. AM. BACK.");
-				showStatus.show();
-				songVolume = data.getIntExtra("volume", 4);
-				TextView songName = (TextView) findViewById(R.id.songName);
-				TextView artistName = (TextView) findViewById(R.id.artistName);
-				ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
-				TCPReadTimerTask tcp_task = new TCPReadTimerTask();
-				tcp_timer = new Timer();
-				tcp_timer.schedule(tcp_task, 0, 200);
-				bar.setProgress(data.getIntExtra("progress", 0));
-				int index = data.getIntExtra("index", 0);
-				songName.setText(mainPlaylist.get(index)[1]);
-				artistName.setText(mainPlaylist.get(index)[2]);
-				
-			}
-		}
+		
 		
 		} 
 	}
@@ -689,7 +689,8 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		intent.putExtra("progress", currentSongPositionInTime);
 		
 		tcp_timer.cancel();
-		startActivityForResult(intent, advanced);
+		//sgestureDetector.
+		startActivity(intent);
 	}
 
 }

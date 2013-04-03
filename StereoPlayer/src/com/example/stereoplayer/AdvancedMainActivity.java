@@ -246,6 +246,14 @@ public class AdvancedMainActivity extends Activity
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
 	}
 	
+	@Override
+	public void onPause()
+	{
+		tcp_task.cancel();
+		super.onPause();
+		
+	}
+	
 	public void initializeList(String[] playlist)
 	{
 		Log.i("AdvancedMain", "SimpleMain - initializing Song List");
