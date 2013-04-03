@@ -21,6 +21,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 public class AdvancedMainActivity extends Activity
@@ -31,6 +32,7 @@ public class AdvancedMainActivity extends Activity
 	/* Constants */
 	final static int ONE_BYTE = 1;
 	final static int MAX_BYTES = 255;
+	final static int dragDrop = 3;
 	
 	/* Variables */	
 	private MyApplication app;
@@ -230,12 +232,6 @@ public class AdvancedMainActivity extends Activity
 		.detectDiskReads().detectDiskWrites().detectNetwork()
 		.penaltyLog().build());
 		
-		tcp_task = new TCPReadTimerTask();
-		Timer tcp_timer = new Timer();
-		tcp_timer.schedule(tcp_task, 3000, 200);
-		
-		getIndex();
-		
 		Intent intent = getIntent();
 		rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
 		songVolume = intent.getIntExtra("volume", 4);
@@ -243,6 +239,17 @@ public class AdvancedMainActivity extends Activity
 		initializeList(rawPlaylist);
 		updateProgressBar();
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
+	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		tcp_task = new TCPReadTimerTask();
+		Timer tcp_timer = new Timer();
+		tcp_timer.schedule(tcp_task, 3000, 200);
+		
+		getIndex();
 	}
 	
 	@Override
@@ -258,7 +265,14 @@ public class AdvancedMainActivity extends Activity
 		Intent intent = new Intent(this, DragDropPlaylist.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);
 		
-		startActivity(intent);
+		startActivityForResult(intent, dragDrop);
+	}
+	
+	@Override 
+	public void onActivityResult(int requestCode, int resultCode, Intent data) 
+	{   
+		super.onActivityResult(requestCode, resultCode, data);
+		Toast.makeText(this, "backFromDrag", Toast.LENGTH_SHORT).show();
 	}
 	
 	public void initializeList(String[] playlist)
