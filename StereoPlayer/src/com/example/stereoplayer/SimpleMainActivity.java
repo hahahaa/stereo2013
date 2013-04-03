@@ -295,6 +295,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	private MyApplication app;
 	private double currentSongPositionInTime;
 	private Timer tcp_timer;
+	private boolean paused;
 
 	@SuppressLint("ShowToast")
 	@Override
@@ -343,6 +344,14 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			tcp_timer = new Timer();
 			tcp_timer.schedule(tcp_task, 0, 200);
 		}
+		paused = false;
+	}
+	
+	@Override
+	public void onPause()
+	{
+		super.onPause();
+		paused = true;
 	}
 
 	@Override
@@ -505,6 +514,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent me){
+		if (paused == true) return false;
 		return gestureDetector.onTouchEvent(me);
 	}
 
