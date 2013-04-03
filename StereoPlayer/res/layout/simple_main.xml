@@ -38,7 +38,7 @@
 
     </LinearLayout>
 	
-    <LinearLayout
+   <LinearLayout
         android:id="@+id/mainButtonLayout"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
@@ -87,15 +87,7 @@
             android:progress="50"
             android:progressDrawable="@drawable/progress_bar2" />
 
-        <Button
-            android:id="@+id/button1"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:alpha="0.75"
-            android:layout_gravity="right"
-            android:text="Playlist"
-            android:onClick="openAdvancedPlaylist" />
+
 
     </LinearLayout>
 
