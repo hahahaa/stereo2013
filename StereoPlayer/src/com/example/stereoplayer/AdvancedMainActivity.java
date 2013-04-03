@@ -366,12 +366,6 @@ public class AdvancedMainActivity extends Activity
 	public void getIndex() {
 		app.new SocketSend().execute("I");
 	}
-	
-	public void sendSongIdToDE2(View view)
-	{
-		
-		
-	}
 
 	/* Toggles mode from Order-Mode/Shuffle-Mode */
 	public void onClickPlayOrderMode( View view )

@@ -192,14 +192,8 @@
                 android:text="Piano"
                 android:onClick="openPiano" />
             
-            </LinearLayout>
-        </LinearLayout>
-
-    </LinearLayout>
-
-
-     
-   	 <ImageView
+            </LinearLayouonClick="openDragDropPlaylist"
+                android:text="DragDrop" geView
    	     android:id="@+id/imageView3"
    	     android:layout_width="wrap_content"
    	     android:layout_height="wrap_content"
@@ -263,11 +257,11 @@
             android:textSize="30dp" >
         </TextView>
 
-
         <ListView
             android:id="@+id/listView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
     </LinearLayout>
 
 </LinearLayout><!-- android:onClick="sendMessage" -->
