@@ -20,6 +20,8 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ProgressBar;
+import android.widget.RatingBar;
+import android.widget.SimpleAdapter.ViewBinder;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -275,12 +277,15 @@ public class AdvancedMainActivity extends Activity
 		if (requestCode == dragDrop && resultCode == Activity.RESULT_OK)
 		{
 			Toast.makeText(this, "backFromDrag", Toast.LENGTH_SHORT).show();
-			String[] result = loadList("test");
+			String name = data.getStringExtra("playlistName");
+			String[] result = loadList(name);
 			if (result != null)
 			{
 				Toast.makeText(this, "playlist test loaded", Toast.LENGTH_SHORT).show();
 				for (int i =0; i < result.length; i++)
 					Log.i("load",result[i]);
+				initializeListView(result);
+				
 			}
 		}
 		else if (resultCode == Activity.RESULT_CANCELED)
@@ -607,5 +612,27 @@ public class AdvancedMainActivity extends Activity
 		//intent.putExtra("rawPlaylist", rawPlaylist);
 
 		startActivity(intent);
+	}
+	
+	public void initializeListView(String[] result)
+	{
+		
+	}
+	
+	class MyBinder implements ViewBinder
+	{
+
+		@Override
+		public boolean setViewValue(View arg0, Object arg1, String arg2) {
+			if (arg0 instanceof RatingBar)
+			{
+				//String stringval = (String) arg1;
+				float i = Float.parseFloat((String)arg1);
+				RatingBar bar = (RatingBar) arg0;
+				bar.setRating(i);
+				return true;
+			}
+			return false;
+		}
 	}
 }

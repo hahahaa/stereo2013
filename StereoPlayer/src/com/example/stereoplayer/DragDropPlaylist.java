@@ -33,6 +33,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.Toast;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class DragDropPlaylist extends Activity {
@@ -47,6 +48,7 @@ public class DragDropPlaylist extends Activity {
 	private ArrayAdapter<String> targetAdapter;
 	
 	private EditText nameEdit;
+	private String currentName;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -88,7 +90,9 @@ public class DragDropPlaylist extends Activity {
 	 * send the created list
 	 */
 	public void sendList (View view) {
-		if(!newSongList.isEmpty()) {
+		if(!newSongList.isEmpty())
+		{
+			saveNewList(view);
 			String[] list = new String [newSongList.size()];
 			for(int i = 0; i < list.length; i++)
 				list[i] = newSongList.get(i).get("ID");
@@ -96,10 +100,8 @@ public class DragDropPlaylist extends Activity {
 			app.new SocketSend().execute("Z");
 			sendCurrentPlayListToDE2(list);
 			Intent resultIntent = new Intent();
-			//resultIntent.putExtra("volume", volume);
-			//resultIntent.putExtra("FromLoading", playlist);
+			resultIntent.putExtra("playlistName", currentName);
 			setResult(Activity.RESULT_OK, resultIntent);
-			//tcp_timer.cancel();
 			finish();
 		}
 	}
@@ -108,13 +110,17 @@ public class DragDropPlaylist extends Activity {
 	 * save the list on android
 	 */
 	public void saveNewList (View view) {
-		String name = nameEdit.getEditableText().toString();
-		if(name.compareTo("") == 0)
-			name = "newlist1";
+		currentName = nameEdit.getEditableText().toString();
+		if(currentName.compareTo("") == 0)
+		{
+			Toast.makeText(this, "Please enter a name", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
 		String[] list = new String [newSongList.size()];
 		for(int i = 0; i < list.length; i++)
 			list[i] = newSongList.get(i).get("ID");
-		saveList( name, list );
+		saveList( currentName, list );
 	}
 	
 	public void loadListFromFile (View view) {
