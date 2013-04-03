@@ -31,12 +31,26 @@
             <shape>
                 <corners android:radius="3dip" />
 
-                <gradient
-                    android:angle="45"
-                    android:endColor="#d44b00"
-                    android:startColor="#cff158" />
+                <stroke
+                    android:width="2dp"
+                    android:color="#ff207d94" />
+
+                <padding
+                    android:bottom="2dp"
+                    android:left="2dp"
+                    android:right="2dp"
+                    android:top="2dp" />
+
+                <corners android:radius="5dp" />
+
+                <solid android:color="#ffffffff" />
             </shape>
         </clip>
     </item>
 
-</layer-list>
+</layer-list><!--
+     <gradient
+                    android:angle="45"
+                    android:endColor="#d44b00"
+                    android:startColor="#cff158" />
+-->

@@ -36,9 +36,10 @@ public class AdvancedMainActivity extends Activity
 	private MyApplication app;
 	private ArrayList<String[]> mainPlaylist;
 	private String[] rawPlaylist;
+	private TCPReadTimerTask tcp_task;
 	private int songIndex;
 	private int songVolume;
-	private TCPReadTimerTask tcp_task;
+	private int currentSongPositionInTime;
 	
 	public class TCPReadTimerTask extends TimerTask 
 	{		
@@ -58,7 +59,6 @@ public class AdvancedMainActivity extends Activity
 						in.read(buf);
 						String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
 						String data = new String();
-						//Log.i("AdvancedMain", "Handshake - msg to compare is: " + msg);
 					
 						if (msg.compareTo("M") == 0 || msg.compareTo("I") == 0 || msg.compareTo("O") == 0 )
 						{							
@@ -68,7 +68,6 @@ public class AdvancedMainActivity extends Activity
 							byte buffer[] = new byte[ONE_BYTE];
 							in.read(buffer);
 							int numBytesOfNumber = buffer[0];
-							//Log.i("AdvancedMain", "Handshake - numBytesOfNumber is: " + numBytesOfNumber);
 							
 							buffer = new byte[numBytesOfNumber];
 							
@@ -77,7 +76,6 @@ public class AdvancedMainActivity extends Activity
 							String temp = new String( buffer, 0, numBytesOfNumber, "US-ASCII" );
 							
 							int numBytesOfData = Integer.parseInt( temp );
-							//Log.i("AdvancedMain", "Handshake - numBytesOfData is: " + numBytesOfData );
 							
 							buffer = new byte[ONE_BYTE];
 							for ( int i = 0; i < numBytesOfData; )
@@ -85,12 +83,10 @@ public class AdvancedMainActivity extends Activity
 								if ( in.available() > 0 )
 								{
 									in.read(buffer);
-									//Log.i("AdvancedMain", "Handshake - data to concat is: " + buffer[0]);
 									data = data.concat( new String(buffer, 0, ONE_BYTE, "US-ASCII") );
 									i++;
 								}
 							}
-							//Log.i("AdvancedMain", "Handshake - Data is: " + data);
 						}
 						
 						final String command = new String(msg);
@@ -105,16 +101,12 @@ public class AdvancedMainActivity extends Activity
 							Log.i("Shuffle", "String message is: " + message);
 						}
 						
-						
 						runOnUiThread(new Runnable() 
 						{
 							public void run() 
 							{								
-								Log.i("Prog", "Started Run On UI Thread");
-
 								TextView volumeT = (TextView) findViewById(R.id.viewText1);
 								TextView text = (TextView) findViewById(R.id.viewText2);
-
 								
 								if ( command.compareTo( "P" ) == 0 )
 								{
@@ -150,7 +142,7 @@ public class AdvancedMainActivity extends Activity
 								} 
 								else if (command.compareTo("O") == 0) 
 								{
-									int currentSongPositionInTime = Integer.parseInt( message );
+									currentSongPositionInTime = Integer.parseInt( message );
 									
 									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
 									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
@@ -236,15 +228,6 @@ public class AdvancedMainActivity extends Activity
 		}
 	}
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -255,7 +238,6 @@ public class AdvancedMainActivity extends Activity
 		setContentView(R.layout.advanced_main);
 
 		app = (MyApplication)AdvancedMainActivity.this.getApplication();
-		
 		songVolume = 0;
 		
 		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
@@ -318,10 +300,12 @@ public class AdvancedMainActivity extends Activity
 		app.new SocketSend().execute("D");
 	}
 	
+	/* Gets the current song index from DE2 */
 	public void getIndex() {
 		app.new SocketSend().execute("I");
 	}
 	
+	/* Toggles mode from Order-Mode/Shuffle-Mode */
 	public void onClickPlayOrderMode( View view )
 	{
 		boolean isShuffle = ((ToggleButton) view).isChecked();
@@ -332,6 +316,7 @@ public class AdvancedMainActivity extends Activity
 			app.new SocketSend().execute("h");
 	}
 	
+	/* Toggles mode from Repeat-One-Song-Mode/Repeat-Whole-List-Mode */
 	public void onClickPlayRepeatMode( View view )
 	{
 		boolean isRepeatOneSong = ((ToggleButton) view).isChecked();
@@ -540,11 +525,7 @@ public class AdvancedMainActivity extends Activity
 		return null;
 	}
 	
-	/* Debugging purpose */
-	public void debugHandShakedLongMessage(View view) {
-		app.new SocketSend().execute("M");
-	}
-	
+	/* Initializes the max time of the current song */
 	public void setupTime( int songLength )
 	{
 		TextView MaxTimeMin = (TextView) findViewById( R.id.textView5 );
@@ -561,12 +542,11 @@ public class AdvancedMainActivity extends Activity
 		MaxTimeSec.setText( maxSecStr );
 	}
 	
+	/* Updates the current time of the current song */
 	public void updateTime( int currentSongPositionInTime, int songLength )
 	{
 		TextView currTimeMin = (TextView) findViewById( R.id.textView1 );
 		TextView currTimeSec = (TextView) findViewById( R.id.textView3 );
-		
-		//int currTime = (int) (currentSongPositionInTime * songLength / 100.0 );
 		
 		if ( currentSongPositionInTime > songLength )
 			return;
