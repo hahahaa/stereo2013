@@ -1,8 +1,12 @@
 package com.example.stereoplayer;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Timer;
@@ -24,7 +28,8 @@ import android.view.WindowManager;
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class LoadingScreenActivity  extends Activity {
 	
-	private String ipStr = "206.87.114.68";
+//	private String ipStr = "206.87.114.68";
+	private String ipStr;
 	private int portNumber = 50002;
 	
 	public class SocketConnect extends AsyncTask<Void, Void, Socket> {
@@ -33,7 +38,7 @@ public class LoadingScreenActivity  extends Activity {
 		protected Socket doInBackground(Void... voids) {
 			Log.i("flow", "SocketConnect: doInBackground" );
 			Socket s = null;
-			String ip = ipStr;
+			String ip = getipAddress();
 			Integer port = portNumber;
 			try {
 				s = new Socket(ip, port);
@@ -198,5 +203,25 @@ public class LoadingScreenActivity  extends Activity {
 				}
 			}
 		}
+	}
+	
+	/**
+	 * 
+	 * @return ip, return null if fail to find the ip
+	 */
+	private String getipAddress() {
+		URL whatismyip;
+		try {
+			whatismyip = new URL("http://checkip.amazonaws.com/");
+			BufferedReader in = new BufferedReader(new InputStreamReader(whatismyip.openStream()));
+			String ip = in.readLine(); //you get the IP as a String
+			Log.i("IP",ip);
+			return ip;
+		} catch (MalformedURLException e) {
+			Log.i("IP", e.getMessage());
+		} catch (IOException e) {
+			Log.i("IP", e.getMessage());
+		}
+		return null;
 	}
 }
