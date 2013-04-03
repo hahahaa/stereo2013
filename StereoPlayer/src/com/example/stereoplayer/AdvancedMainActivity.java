@@ -253,6 +253,14 @@ public class AdvancedMainActivity extends Activity
 		
 	}
 	
+	public void openDragDropPlaylist()
+	{
+		Intent intent = new Intent(this, DragDropPlaylist.class);
+		intent.putExtra("rawPlaylist", rawPlaylist);
+		
+		startActivity(intent);
+	}
+	
 	public void initializeList(String[] playlist)
 	{
 		Log.i("AdvancedMain", "SimpleMain - initializing Song List");
