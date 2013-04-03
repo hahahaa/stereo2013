@@ -306,10 +306,10 @@ public class AdvancedMainActivity extends Activity
 				Toast.makeText(this, "playlist test loaded", Toast.LENGTH_SHORT).show();
 				for (int i =0; i < result.length; i++)
 					Log.i("load",result[i]);
-				//initializeListViewFromDragDrop(result);
 				currentSongPositionInTime = 0;
 				TextView text = (TextView) findViewById(R.id.viewText2);
 				text.setText( "Stopped" );
+				initializeListViewFromDragDrop(result);
 			}
 		}
 		else if (resultCode == Activity.RESULT_CANCELED)
