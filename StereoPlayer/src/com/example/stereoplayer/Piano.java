@@ -38,42 +38,42 @@ public class Piano extends Activity {
 	
 	public void playDoD(View view)
 	{
-		app.new SocketSend().execute("P");
+		app.new SocketSend().execute("DoD");
 	}
 	
 	public void playRe(View view)
 	{
-		app.new SocketSend().execute("P");
+		app.new SocketSend().execute("Re");
 	}
 	
 	public void playMi(View view)
 	{
-		app.new SocketSend().execute("P");
+		app.new SocketSend().execute("Mi");
 	}
 	
 	public void playFa(View view)
 	{
-		app.new SocketSend().execute("P");
+		app.new SocketSend().execute("Fa");
 	}
 	
 	public void playSo(View view)
 	{
-		app.new SocketSend().execute("P");
+		app.new SocketSend().execute("So");
 	}
 	
 	public void playLa(View view)
 	{
-		app.new SocketSend().execute("P");
+		app.new SocketSend().execute("La");
 	}
 	
 	public void playTi(View view)
 	{
-		app.new SocketSend().execute("P");
+		app.new SocketSend().execute("Ti");
 	}
 	
 	public void playDoU(View view)
 	{
-		app.new SocketSend().execute("P");
+		app.new SocketSend().execute("DoU");
 	}
 
 	
