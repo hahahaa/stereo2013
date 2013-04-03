@@ -17,8 +17,7 @@
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/piano_do_down"
-        android:text="@string/Do_down"
-        android:onClick="playDoD" />
+        android:text="@string/Do_down" />
 
     <Button
         android:id="@+id/Re"
