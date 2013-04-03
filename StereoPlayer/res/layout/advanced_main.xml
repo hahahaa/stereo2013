@@ -29,18 +29,6 @@
         android:layout_height="wrap_content"
         android:id="@+id/button2"
         android:onClick="playPauseSong"/>  
-      
-      <Button
-        android:text="Pause" 
-        android:textColor="@color/tab_font_colors"
-        android:textStyle="bold"
-        android:drawableTop="@drawable/ic_menu_pause"
-        android:background="@drawable/tab_indicator"
-        android:padding="5dp"
-        android:layout_weight="1"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:id="@+id/button1"/>  
 
        <Button
 
@@ -67,10 +55,11 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:id="@+id/button6"
-        android:onClick="nextSong"/>  
+        android:onClick="nextSong"/>
+      
 
-    </LinearLayout>
-    	
+
+         </LinearLayout>
     	
     <LinearLayout
         android:layout_width="fill_parent"
@@ -208,15 +197,7 @@
 
     </LinearLayout>
 
-     <TextView
-         android:layout_width="wrap_content"
-         android:layout_height="wrap_content"
-         android:text="  "
-         android:textColor="#000"
- android:layout_marginTop="20dip"
-         
-         android:textSize="10sp"/>
-     
+
    	 <ImageView
    	     android:id="@+id/imageView3"
    	     android:layout_width="wrap_content"
@@ -252,48 +233,11 @@
       	android:text="  "
         android:textSize="10sp"/>
     
-     <TextView
-         android:layout_width="wrap_content"
-         android:layout_height="wrap_content"
-         android:text="Below are testing!!"
-         android:textColor="#FF0"
-         android:textSize="20sp"
-         android:textStyle="bold" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical" >
-
-        <TextView
-            android:id="@+id/viewText1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#222"
-            android:ems="10"
-            android:text="Volume = 4"
-            android:textColor="#FFF"
-            android:textSize="30dp" />
-
-        <TextView
-            android:id="@+id/viewText2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:ems="10"
-            android:linksClickable="true"
-            android:longClickable="true"
-            android:onClick="sendMessage"
-            android:text="@string/song1"
-            android:textSize="30dp" >
-        </TextView>
-
-        <Button
-            android:id="@+id/button5"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="sendMessage"
-            android:text="Button" />
 
         <ListView
             android:id="@+id/listView"
@@ -301,4 +245,24 @@
             android:layout_height="match_parent" />
     </LinearLayout>
 
-</LinearLayout><!-- android:onClick="sendMessage" -->
+</LinearLayout>
+
+
+
+
+<!-- android:onClick="sendMessage" -->
+
+
+
+      
+<!--       <Button -->
+<!--         android:text="Pause"  -->
+<!--         android:textColor="@color/tab_font_colors" -->
+<!--         android:textStyle="bold" -->
+<!--         android:drawableTop="@drawable/ic_menu_pause" -->
+<!--         android:background="@drawable/tab_indicator" -->
+<!--         android:padding="5dp" -->
+<!--         android:layout_weight="1" -->
+<!--         android:layout_width="0dp" -->
+<!--         android:layout_height="wrap_content" -->
+<!--         android:id="@+id/button1"/>   -->
