@@ -70,7 +70,7 @@ int numSongs;
 int currSong;
 int shuffle_flag;
 int repeat_flag;
-int* playList;
+int* playList;	// stores the song IDs
 int playListSize;
 
 typedef struct {
@@ -128,7 +128,7 @@ int playSong( short int file_handle, int state, int length );
 void stopSong( short int file_handle );
 int nextSong( int next, int size );
 void audio_isr( void * context, unsigned int irq_id );
-int findSong( SongDetail** list, int numSong, char* id );
+int findSong( SongDetail** list, int numSong, int id );
 void readTone( unsigned int* tone, int tone_size, char* name);
 void runStopState( SongDetail** list );
 int runPlayingState( SongDetail** list );
@@ -143,7 +143,7 @@ int updateState( int prevState );
 
 /* Mixing */
 void readSong( volatile unsigned int* song, int size, char* fileName );
-void playPiano();
+void playPianoBySW();
 
 int main()
 {
@@ -185,8 +185,13 @@ int main()
 	playList = malloc(numSongs * sizeof(int));
 	int k;
 	for(k = 0; k < numSongs; k++)
-		playList[k] = k;
+		playList[k] = atoi( songDetailList[k]->id );
 	playListSize = numSongs;
+
+	printf("Playlist:\n");
+	for(k = 0; k < playListSize; k++)
+		printf("%d ", playList[k]);
+	printf("\n");
 
 	IOWR_8DIRECT(leds, 0, 0xFF);
 
@@ -247,7 +252,7 @@ int main()
  */
 int updateState( int prevState )
 {
-	playPiano();
+	//playPianoBySW();
 
 	int returnState = prevState;
 	if( prevState == STOP )
@@ -355,7 +360,7 @@ int updateStateFromUART( int prevState )
 	{
 		// send the song index
 		char* songIndex = (char*)malloc( 3 );
-		sprintf( songIndex, "%d", findSong(songDetailList, numSongs, songDetailList[playList[currSong]]->id) );
+		sprintf( songIndex, "%d", findSong(songDetailList, numSongs, playList[currSong]) );
 		sendHandShakedLongMessageToMiddleMan( 'I', songIndex );
 		free( songIndex );
 	}
@@ -367,11 +372,15 @@ int updateStateFromUART( int prevState )
 		sendHandShakedLongMessageToMiddleMan( 'V', buf );
 		free( buf );
 	}
-	else if( strcmp(temp, "list") == 0)
+	else if( strcmp(temp, "Z") == 0)
 	{
 		receivePlayListFromMiddleMan( playList , &playListSize );
 		currSong = 0;
-
+		int i;
+		for(i = 0; i < playListSize; i++)
+			printf("%d ", playList[i]);
+		printf("\n");
+		state = STOP;
 	}
 	else if( strcmp(temp, "playlist") == 0)
 	{
@@ -379,6 +388,46 @@ int updateStateFromUART( int prevState )
 		alt_irq_disable(AUDIO_0_IRQ);
 		sendSongListToMiddleMan( songDetailList, numSongs );
 		alt_irq_enable(AUDIO_0_IRQ);
+	}
+	else if( strcmp(temp, "DoD") == 0)
+	{
+		mixSong = A3;
+		mix_flag = 1;
+	}
+	else if( strcmp(temp, "Re") == 0)
+	{
+		mixSong = B3;
+		mix_flag = 1;
+	}
+	else if( strcmp(temp, "Mi") == 0)
+	{
+		mixSong = C3;
+		mix_flag = 1;
+	}
+	else if( strcmp(temp, "Fa") == 0)
+	{
+		mixSong = C4;
+		mix_flag = 1;
+	}
+	else if( strcmp(temp, "So") == 0)
+	{
+		mixSong = D3;
+		mix_flag = 1;
+	}
+	else if( strcmp(temp, "La") == 0)
+	{
+		mixSong = E3;
+		mix_flag = 1;
+	}
+	else if( strcmp(temp, "Ti") == 0)
+	{
+		mixSong = F3;
+		mix_flag = 1;
+	}
+	else if( strcmp(temp, "DoU") == 0)
+	{
+		mixSong = G3;
+		mix_flag = 1;
 	}
 
 	free(temp);
@@ -484,11 +533,11 @@ int runPlayingState( SongDetail** list )
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 	alt_up_character_lcd_string(char_lcd_dev, "PLAYING");
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
-	alt_up_character_lcd_string(char_lcd_dev, list[ playList[currSong] ]->name);
+	alt_up_character_lcd_string(char_lcd_dev, list[ findSong(list, numSongs, playList[currSong]) ]->name);
 
 	char temp[ID_LENGTH + EXTENSION_LENGTH];
-	printf("currSong: %d  playList[currSong]: %d\n", currSong, playList[currSong]);
-	strcpy( temp, list[ playList[currSong] ]->id );
+	printf("currSong: %d  playList[currSong]: %d\n", currSong, findSong(list, numSongs, playList[currSong]) );
+	strcpy( temp, list[ findSong(list, numSongs, playList[currSong]) ]->id );
 	strcat( temp, ".wav" );
 	if( openFileInSD( temp, &file_handle ) == 0)
 	{
@@ -503,9 +552,13 @@ int runPlayingState( SongDetail** list )
 	// send the song index to andriod
 	char* songIndex = (char*)malloc( 3 );
 	//printf("numSongs: %d, currSong: %d, list[currSong]->id: %s\n", numSongs, currSong, list[ currSong ]->id);
-	sprintf( songIndex, "%d", findSong(list, numSongs, list[playList[currSong]]->id) );
+
+	sprintf( songIndex, "%d", findSong(list, numSongs, playList[currSong]) );
+	printf("songID %d\n", playList[currSong]);
+
 	printf("songIndex sent: %s\n", songIndex);
 	sendHandShakedLongMessageToMiddleMan( 'M', songIndex );
+
 	free( songIndex );
 
 	int state = playSong( file_handle, PLAYING_NORMAL, atoi(list[playList[currSong]]->time) );
@@ -538,7 +591,7 @@ void runStopState( SongDetail** list )
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 	alt_up_character_lcd_string(char_lcd_dev, "STOP            ");
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 1);
-	alt_up_character_lcd_string(char_lcd_dev, list[ playList[currSong] ]->name);
+	alt_up_character_lcd_string(char_lcd_dev, list[ findSong(list, numSongs, playList[currSong]) ]->name);
 }
 
 /*
@@ -562,7 +615,10 @@ void audio_isr (void * context, unsigned int irq_id)
 			song_sample[cc] = song_sample[cc] + mixSong[mix_index];
 			mix_index++;
 			if(mix_index == MIX_SONG_SIZE)
+			{
 				mix_index = 0;
+				mix_flag = 0;
+			}
 			song_sample[cc] = song_sample[cc]>>1;
 		}
 
@@ -905,7 +961,7 @@ void sendHandShakedLongMessageToMiddleMan( char command, char* str )
 	char buffer[5]; // Gonna change the magic number
 
 	alt_up_rs232_write_data( uart, command );
-	printf( "Sent command: %c\n", command );
+	//printf( "Sent command: %c\n", command );	// debug
 
 	sprintf( buffer, "%d", (int)strlen( str ) );
 	alt_up_rs232_write_data( uart, (int) strlen(buffer) );  // Number of digits of the number of chars of data
@@ -918,7 +974,7 @@ void sendHandShakedLongMessageToMiddleMan( char command, char* str )
 
 	for ( i = 0; i < strlen(str); i++ )
 		alt_up_rs232_write_data( uart, str[i] );
-	printf("sendHandShakedLongMessageToMiddleMan done\n");
+	//printf("sendHandShakedLongMessageToMiddleMan done\n");	// debug
 	free( buffer2 );
 }
 
@@ -934,7 +990,7 @@ void sendStringToMiddleMan( char* str )
 	for ( i = 0; i < strlen(str); i++ )
 		alt_up_rs232_write_data( uart, str[i] );
 
-	printf("sendStringToMiddle: %s\n", str);	//debug
+	//printf("sendStringToMiddle: %s\n", str);	//debug
 }
 
 /* Reads a string from the middle man; the first byte needs to be the length of the string
@@ -1204,14 +1260,14 @@ char readACharFromSD( short int file_handle )
  * Given the id of the song, finds the song from the song detail list
  * Returns the index of the song in the list if successful, otherwise -1.
  */
-int findSong( SongDetail** list, int numSong, char* id )
+int findSong( SongDetail** list, int numSong, int id )
 {
 	int i;
 	if ( !list || !id )
 		return -1;
 	for ( i = 0; i < numSong; i++ )
 	{
-		if ( strcmp( list[i]->id, id ) == 0 )
+		if ( atoi(list[i]->id) == id )
 			return i;
 	}
 	return -1;
@@ -1274,7 +1330,7 @@ void readSong( volatile unsigned int* song, int size, char* fileName)
 /**
  * play piano from switches
  */
-void playPiano()
+void playPianoBySW()
 {
 	unsigned char sw = IORD_8DIRECT(SWITCHES, 0);
 	if(sw == 1)
