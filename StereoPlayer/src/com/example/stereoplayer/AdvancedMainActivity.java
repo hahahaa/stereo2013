@@ -165,6 +165,12 @@ public class AdvancedMainActivity extends Activity
 								{
 									songIndex = Integer.parseInt( message );
 									Log.i("indexNumber", Integer.toString(songIndex));
+									
+									updateProgressBar();
+									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
+									setupTime( songLength );
+									updateTime( currentSongPositionInTime, songLength );
+									text.setText("Playing: " + mainPlaylist.get(songIndex)[1]);
 								}
 								else
 								{
@@ -244,19 +250,21 @@ public class AdvancedMainActivity extends Activity
 		songVolume = intent.getIntExtra("volume", 4);
 		currentSongPositionInTime = intent.getIntExtra("progress", 0);
 		if (mainPlaylist == null) initializeList(rawPlaylist);
-		updateProgressBar();
-		int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
-		setupTime( songLength );
-		updateTime( currentSongPositionInTime, songLength );
-		
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
-
 	}
 
 	@Override
 	public void onResume()
 	{
 		super.onResume();
+		
+		app.new SocketSend().execute( "W" );
+		
+		/* Testing */
+		TCPClearTask tcpClearTask = new TCPClearTask();
+		Timer tcp_timer2 = new Timer();
+		tcp_timer2.schedule( tcpClearTask, 0 );
+		
 		tcp_task = new TCPReadTimerTask();
 		Timer tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
@@ -284,6 +292,7 @@ public class AdvancedMainActivity extends Activity
 	public void onActivityResult(int requestCode, int resultCode, Intent data) 
 	{   
 		super.onActivityResult(requestCode, resultCode, data);
+		
 		if (requestCode == dragDrop && resultCode == Activity.RESULT_OK)
 		{
 			Toast.makeText(this, "backFromDrag", Toast.LENGTH_SHORT).show();
@@ -728,15 +737,21 @@ public class AdvancedMainActivity extends Activity
 					InputStream in = app.sock.getInputStream();
 					int bytes_avail = in.available();
 
-					if (bytes_avail > 0) 
-					{						
-						Log.i( "Clear", Integer.toString( bytes_avail ) );
-						
-						byte buf[] = new byte[ONE_BYTE];
-						in.read(buf);
-						String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
-						
-						Log.i( "Clear", msg );
+					while ( true )
+					{
+						if (bytes_avail > 0) 
+						{						
+							Log.i( "Clear", Integer.toString( bytes_avail ) );
+							
+							byte buf[] = new byte[ONE_BYTE];
+							in.read(buf);
+							String msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
+							
+							Log.i( "Clear", msg );
+							
+							if ( msg.compareTo( "W" ) == 0 )
+								break;
+						}
 					}
 				} 
 				catch (IOException e) 
