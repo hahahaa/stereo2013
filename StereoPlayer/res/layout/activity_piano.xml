@@ -17,7 +17,8 @@
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/piano_do_down"
-        android:text="@string/Do_down" />
+        android:text="@string/Do_down"
+        android:onClick="playDoD" />
 
     <Button
         android:id="@+id/Re"
@@ -26,7 +27,8 @@
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/piano_re"
-        android:text="@string/Re" />
+        android:text="@string/Re"
+        android:onClick="playRe" />
 
     <Button
         android:id="@+id/Mi"
@@ -35,7 +37,8 @@
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/piano_mi"
-        android:text="@string/Mi" />
+        android:text="@string/Mi"
+        android:onClick="playMi" />
 
     <Button
         android:id="@+id/Fa"
@@ -44,7 +47,8 @@
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/piano_fa"
-        android:text="@string/Fa" />
+        android:text="@string/Fa"
+        android:onClick="playFa" />
 
     <Button
         android:id="@+id/So"
@@ -53,7 +57,8 @@
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/piano_sol"
-        android:text="@string/So" />
+        android:text="@string/So"
+        android:onClick="playSo" />
 
     <Button
         android:id="@+id/La"
@@ -62,7 +67,8 @@
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/piano_la"
-        android:text="@string/La" />
+        android:text="@string/La"
+        android:onClick="playLa" />
 
     <Button
         android:id="@+id/Ti"
@@ -71,7 +77,8 @@
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/piano_ti"
-        android:text="@string/Ti" />
+        android:text="@string/Ti"
+        android:onClick="playTi" />
 
     <Button
         android:id="@+id/DoU"
@@ -80,6 +87,7 @@
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/piano_do_up"
-        android:text="@string/Do_up" />
+        android:text="@string/Do_up"
+        android:onClick="playDoU" />
 
 </LinearLayout>

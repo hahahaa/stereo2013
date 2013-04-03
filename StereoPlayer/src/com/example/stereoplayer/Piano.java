@@ -1,5 +1,7 @@
 package com.example.stereoplayer;
 
+import com.example.stereoplayer.MyApplication.SocketSend;
+
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
@@ -15,21 +17,63 @@ public class Piano extends Activity {
 	
 	private Vibrator vibrator; 
 	
-	Button DoD_btn;
-	Button Re_btn;
-	Button Mi_btn;
-	Button Fa_btn;
-	Button So_btn;
-	Button La_btn;
-	Button Ti_btn;
-	Button DoU_btn; 
-	boolean Dod_bool = false;
+	private Button DoD_btn;
+	private Button Re_btn;
+	private Button Mi_btn;
+	private Button Fa_btn;
+	private Button So_btn;
+	private Button La_btn;
+	private Button Ti_btn;
+	private Button DoU_btn; 
+	private boolean Dod_bool = false;
+	private MyApplication app;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_piano);
 		vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
 		addListenerOnButton();
+		app = (MyApplication) getApplication();
+	}
+	
+	public void playDoD(View view)
+	{
+		app.new SocketSend().execute("P");
+	}
+	
+	public void playRe(View view)
+	{
+		app.new SocketSend().execute("P");
+	}
+	
+	public void playMi(View view)
+	{
+		app.new SocketSend().execute("P");
+	}
+	
+	public void playFa(View view)
+	{
+		app.new SocketSend().execute("P");
+	}
+	
+	public void playSo(View view)
+	{
+		app.new SocketSend().execute("P");
+	}
+	
+	public void playLa(View view)
+	{
+		app.new SocketSend().execute("P");
+	}
+	
+	public void playTi(View view)
+	{
+		app.new SocketSend().execute("P");
+	}
+	
+	public void playDoU(View view)
+	{
+		app.new SocketSend().execute("P");
 	}
 
 	
