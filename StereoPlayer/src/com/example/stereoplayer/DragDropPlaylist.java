@@ -92,6 +92,8 @@ public class DragDropPlaylist extends Activity {
 			String[] list = new String [newSongList.size()];
 			for(int i = 0; i < list.length; i++)
 				list[i] = newSongList.get(i).get("ID");
+			MyApplication app = (MyApplication) DragDropPlaylist.this.getApplication();
+			app.new SocketSend().execute("Z");
 			sendCurrentPlayListToDE2(list);
 			Intent resultIntent = new Intent();
 			//resultIntent.putExtra("volume", volume);
@@ -106,8 +108,6 @@ public class DragDropPlaylist extends Activity {
 	 * save the list on android
 	 */
 	public void saveNewList (View view) {
-		MyApplication app = (MyApplication) DragDropPlaylist.this.getApplication();
-		app.new SocketSend().execute("Z");
 		String name = nameEdit.getEditableText().toString();
 		if(name.compareTo("") == 0)
 			name = "newlist1";
