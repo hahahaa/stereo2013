@@ -68,12 +68,19 @@
             android:layout_weight="1"
             android:ems="10" />
 
-        <Button
+         <Button
             android:id="@+id/button1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:onClick="saveNewList"
+            android:text="Save" />
+         
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:onClick="sendList"
-            android:text="Create" />
+            android:text="Send" />
 
     </LinearLayout>
 
