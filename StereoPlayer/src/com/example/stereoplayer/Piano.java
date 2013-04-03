@@ -14,9 +14,9 @@ import android.widget.Button;
 import android.widget.Toast;
 
 public class Piano extends Activity {
-	
+
 	private Vibrator vibrator; 
-	
+
 	private Button DoD_btn;
 	private Button Re_btn;
 	private Button Mi_btn;
@@ -35,52 +35,53 @@ public class Piano extends Activity {
 		addListenerOnButton();
 		app = (MyApplication) getApplication();
 	}
-	
-	/*public void playDoD(View view)
+
+	public void playDoD(View view)
 	{
 		app.new SocketSend().execute("DoD");
-	}*/
-	
+		vibrator.vibrate(300);
+	}
+
 	public void playRe(View view)
 	{
 		app.new SocketSend().execute("Re");
 	}
-	
+
 	public void playMi(View view)
 	{
 		app.new SocketSend().execute("Mi");
 	}
-	
+
 	public void playFa(View view)
 	{
 		app.new SocketSend().execute("Fa");
 	}
-	
+
 	public void playSo(View view)
 	{
 		app.new SocketSend().execute("So");
 	}
-	
+
 	public void playLa(View view)
 	{
 		app.new SocketSend().execute("La");
 	}
-	
+
 	public void playTi(View view)
 	{
 		app.new SocketSend().execute("Ti");
 	}
-	
+
 	public void playDoU(View view)
 	{
 		app.new SocketSend().execute("DoU");
 	}
 
-	
-	
+
+
 	public void addListenerOnButton() {
-		 
-		
+
+
 		DoD_btn = (Button) findViewById(R.id.DoD);
 		Re_btn = (Button) findViewById(R.id.Re);
 		Mi_btn = (Button) findViewById(R.id.Mi);
@@ -89,10 +90,10 @@ public class Piano extends Activity {
 		La_btn = (Button) findViewById(R.id.La);
 		Ti_btn = (Button) findViewById(R.id.Ti);
 		DoU_btn = (Button) findViewById(R.id.DoU);
-		
-		
-		
-		DoD_btn.setOnTouchListener(new OnTouchListener(){
+
+
+
+		/*	DoD_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
@@ -105,133 +106,133 @@ public class Piano extends Activity {
 				   case MotionEvent.ACTION_UP:
 					   //add code here
 				   break;
-				  
+
 				}
 				return false;
 			}
-			
-		});
-		
+
+		});*/
+
 		Re_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
-				   case MotionEvent.ACTION_DOWN:
-					   vibrator.vibrate(300);
-				   break;
-				   case MotionEvent.ACTION_UP:
-					   //add code here
-				   break;
-				  
+				case MotionEvent.ACTION_DOWN:
+					vibrator.vibrate(300);
+					break;
+				case MotionEvent.ACTION_UP:
+					//add code here
+					break;
+
 				}
 				return false;
 			}
-			
+
 		});
-		
+
 		Mi_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
-				   case MotionEvent.ACTION_DOWN:
-					   vibrator.vibrate(300);
-				   break;
-				   case MotionEvent.ACTION_UP:
-					   //add code here
-				   break;
-				  
+				case MotionEvent.ACTION_DOWN:
+					vibrator.vibrate(300);
+					break;
+				case MotionEvent.ACTION_UP:
+					//add code here
+					break;
+
 				}
 				return false;
 			}
-			
+
 		});
-		
+
 		Fa_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
-				   case MotionEvent.ACTION_DOWN:
-					   vibrator.vibrate(300);
-				   break;
-				   case MotionEvent.ACTION_UP:
-					   //add code here
-				   break;
-				  
+				case MotionEvent.ACTION_DOWN:
+					vibrator.vibrate(300);
+					break;
+				case MotionEvent.ACTION_UP:
+					//add code here
+					break;
+
 				}
 				return false;
 			}
-			
+
 		});
 		So_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
-				   case MotionEvent.ACTION_DOWN:
-					   vibrator.vibrate(300);
-				   break;
-				   case MotionEvent.ACTION_UP:
-					   //add code here
-				   break;
-				  
+				case MotionEvent.ACTION_DOWN:
+					vibrator.vibrate(300);
+					break;
+				case MotionEvent.ACTION_UP:
+					//add code here
+					break;
+
 				}
 				return false;
 			}
-			
+
 		});
-		
+
 		La_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
-				   case MotionEvent.ACTION_DOWN:
-					   vibrator.vibrate(300);
-				   break;
-				   case MotionEvent.ACTION_UP:
-					   //add code here
-				   break;
-				  
+				case MotionEvent.ACTION_DOWN:
+					vibrator.vibrate(300);
+					break;
+				case MotionEvent.ACTION_UP:
+					//add code here
+					break;
+
 				}
 				return false;
 			}
-			
+
 		});
-		
+
 		Ti_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
-				   case MotionEvent.ACTION_DOWN:
-					   vibrator.vibrate(300);
-				   break;
-				   case MotionEvent.ACTION_UP:
-					   //add code here
-				   break;
-				   
+				case MotionEvent.ACTION_DOWN:
+					vibrator.vibrate(300);
+					break;
+				case MotionEvent.ACTION_UP:
+					//add code here
+					break;
+
 				}
 				return false;
 			}
-			
+
 		});
-		
+
 		DoU_btn.setOnTouchListener(new OnTouchListener(){
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
-				   case MotionEvent.ACTION_DOWN:
-					   vibrator.vibrate(300);
-				   break;
-				   case MotionEvent.ACTION_UP:
-					   //add code here
-				   break;
-				  
+				case MotionEvent.ACTION_DOWN:
+					vibrator.vibrate(300);
+					break;
+				case MotionEvent.ACTION_UP:
+					//add code here
+					break;
+
 				}
 				return false;
 			}
-			
+
 		});
-	
-		
+
+
 	}
-	
+
 
 }
