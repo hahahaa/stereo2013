@@ -107,7 +107,7 @@ public class DragDropPlaylist extends Activity {
 	 */
 	public void saveNewList (View view) {
 		MyApplication app = (MyApplication) DragDropPlaylist.this.getApplication();
-		app.new SocketSend().execute("H");
+		app.new SocketSend().execute("Z");
 		String name = nameEdit.getEditableText().toString();
 		if(name.compareTo("") == 0)
 			name = "newlist1";
