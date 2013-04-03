@@ -29,5 +29,14 @@
     <string name="PlayModeShuffle">Shuffle</string>
     <string name="PlayModeRepeatOn">RepeatOne</string>
     <string name="PlayModeRepeatOff">RepeatList</string>
+    <string name="title_activity_piano">Piano</string>
+    <string name="Do_up">Do</string>
+    <string name="Re">Re</string>
+    <string name="Mi">Mi</string>
+    <string name="Fa">Fa</string>
+    <string name="So">So</string>
+    <string name="La">La</string>
+    <string name="Ti">Ti</string>  
+    <string name="Do_down">Do</string>  
 
 </resources>
