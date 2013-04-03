@@ -1,5 +1,10 @@
 package com.example.drrrrraag;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +13,8 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipDescription;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -49,8 +56,11 @@ public class MainActivity extends Activity {
 		listTarget = (ListView) findViewById(R.id.listView2);
 		targetLayout = (LinearLayout)findViewById(R.id.targetlayout);
 		nameEdit = (EditText)findViewById(R.id.editText1);
-
-		allSonglist = gethardCodedList();	// TODO remove it  initialize allSonglist from the caller
+		
+		// get raw list
+//		Intent intent = getIntent();
+//		String[] rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
+		allSonglist = gethardCodedList();
 		newSongList = new ArrayList<HashMap<String, String>>();
 
 		listSource.setTag("listSource");
@@ -79,12 +89,53 @@ public class MainActivity extends Activity {
 	 */
 	public void sendList (View view) {
 		if(!newSongList.isEmpty()) {
-			// TODO	send newSongList	newSongList only contain the song ID
-			// TODO do sth with the listName
-			String listName = nameEdit.getEditableText().toString();
-			if(listName.compareTo("") == 0)
-				listName = "newlist1";
+			String[] list = new String [newSongList.size()];
+			for(int i = 0; i < list.length; i++)
+				list[i] = newSongList.get(i).get("ID");
+			sendCurrentPlayListToDE2(list);
 		}
+	}
+	
+	/**
+	 * save the list on android
+	 */
+	public void saveNewList (View view) {
+		String name = nameEdit.getEditableText().toString();
+		if(name.compareTo("") == 0)
+			name = "newlist1";
+		String[] list = new String [newSongList.size()];
+		for(int i = 0; i < list.length; i++)
+			list[i] = newSongList.get(i).get("ID");
+		saveList( name, list );
+	}
+	
+	public void loadListFromFile (View view) {
+		String name = nameEdit.getEditableText().toString();
+		if(name.compareTo("") == 0)
+			return;
+		String[] list = loadList(name);
+		if(list == null)
+			return;
+		
+		while(!newSongList.isEmpty())
+			newSongList.remove(0);		//here
+		while(!droppedList.isEmpty())
+			droppedList.remove(0);		//here
+		for(int i = 0; i < list.length; i++) {
+			boolean found = false;
+			for(int position = 0; position < allSonglist.size() && !found; position++) {
+				if(allSonglist.get(position).get("ID").compareTo(list[i]) == 0) {
+					HashMap<String, String> song = new HashMap<String, String>();
+					song.put("ID", allSonglist.get(position).get("ID"));
+					song.put("Song", allSonglist.get(position).get("Song"));
+					song.put("Artist", allSonglist.get(position).get("Artist"));
+					newSongList.add(song);
+					droppedList.add(allSonglist.get(position).get("Song") + "\n" + allSonglist.get(position).get("Artist"));	//here
+					found = true;
+				}
+			}
+		}
+		targetAdapter.notifyDataSetChanged();
 	}
 	
 	private static class MyDragShadowBuilder extends View.DragShadowBuilder {
@@ -173,18 +224,19 @@ public class MainActivity extends Activity {
 					int position = (Integer) event.getLocalState();
 					
 					HashMap<String, String> song = new HashMap<String, String>();
+					song.put("ID", allSonglist.get(position).get("ID"));
 					song.put("Song", allSonglist.get(position).get("Song"));
 					song.put("Artist", allSonglist.get(position).get("Artist"));
 					newSongList.add(song);
 					
-					String tmp = song.get("Song") + "\n" + song.get("Artist");
+					String tmp = song.get("Song") + "\n" + song.get("Artist");	//here
 					droppedList.add(tmp);
 					targetAdapter.notifyDataSetChanged();
 					
 					commentMsg = "Dropped item";
 					Log.i("drag", commentMsg);
 					return true;
-				}else {
+				} else {
 					return false;
 				}
 			case DragEvent.ACTION_DRAG_ENDED:
@@ -206,18 +258,183 @@ public class MainActivity extends Activity {
 		} 
 	}
 	
+	private ArrayList<HashMap<String, String>> getListFromIntent(String[] raw) {
+		ArrayList<HashMap<String, String>> lis = new ArrayList<HashMap<String, String>>();
+		for (int i = 0; i + 5 <= raw.length; i += 5) 
+		{
+			HashMap<String,String> item = new HashMap<String,String>(); 
+			item.put( "ID", raw[i]);
+			item.put( "Song", raw[i + 1]);
+			item.put( "Artist", raw[i + 2]);
+			lis.add( item );
+		}
+		return lis;
+	}
+	
+	private void saveList( String name, String[] str ) {
+		FileOutputStream fos = null;
+		
+		try {
+			fos = openFileOutput( name, Context.MODE_PRIVATE );
+			
+			for ( int i = 0; i < str.length; i++ ) {
+				fos.write( str[i].getBytes() );
+				fos.write( ".".getBytes() );
+			}
+		} 
+		catch (FileNotFoundException e) {
+			Log.i( "Exception", "File: " + name + " is not found." );
+		} 
+		catch (IOException e) {
+			Log.i( "Exception", "str.getBytes() threw an IOException for file: " + name + "." );
+		}
+		finally {
+			try {
+				fos.close();
+			} 
+			catch (IOException e) {
+				Log.i( "Exception", "Failed close file: " + name + "." );
+			}
+		}
+	}
+	
+	/**
+	 * Sends a playList to DE2
+	 * Precondition: playList != null
+	 * @return 0 if successful, otherwise -1
+	 */
+	private int sendCurrentPlayListToDE2 ( String[] playList ) {
+//		MyApplication app = (MyApplication) getApplication();
+//		InputStream in = null;
+//		try {
+//			in = app.sock.getInputStream();
+//		} 
+//		catch (IOException e1) {
+//			Log.i( "Exception", "app.sock.getInputStream() failed in sendCurrentPlayListToDE2" );
+//			return -1;
+//		}
+//		
+//		int listLength = playList.length;
+//		Log.i( "list", "Start sending playList" );
+//		//new SocketSend().execute( Integer.toString( ( Integer.toString( listLength ) ).length() ) );
+//		//Log.i( "list", "Sending: " +  Integer.toString( ( Integer.toString( listLength ) ).length() ) );
+//		app.new SocketSend().execute( Integer.toString( listLength ) );
+//		Log.i( "list", "Sending: " +  Integer.toString( listLength ) );
+//		
+//		for ( int i = 0; i < listLength; i++ ) {
+//			if ( i != 0 && i % 30 == 0 )	// for HandShake
+//			{
+//				try {
+//					byte buf[] = new byte[AdvancedMainActivity.ONE_BYTE];
+//										
+//					app.new SocketSend().execute( "H" );
+//					Log.i( "list", "Sending H" );
+//					
+//					
+//					/* Android loopback mode purpose */
+//					/*
+//					String msg = new String();
+//					while ( msg.compareTo( "H" ) != 0 )
+//					{
+//						if ( in.available() > 0 )
+//						{
+//							in.read( buf );
+//							msg = new String(buf, 0, ONE_BYTE, "US-ASCII");
+//						}
+//					}
+//					*/
+//					
+//					/* Real Purpose */
+//					while ( in.available() == 0 );
+//					Log.i( "list", "Got message from DE2" );
+//					
+//					in.read( buf );
+//					String msg = new String(buf, 0, AdvancedMainActivity.ONE_BYTE, "US-ASCII");
+//					
+//					Log.i( "list", "Message got is: " + msg );
+//					
+//					if ( msg.compareTo( "H" ) != 0 ) {
+//						Log.i( "list", "Invalid message came from DE2 in sendCurrentPlayListToDE2" );
+//						return -1;
+//					}
+//					Log.i( "list", "valid message came from DE2 in sendCurrentPlayListToDE2" );
+//				} 
+//				catch (IOException e) {
+//					Log.i( "Exception", "IOException failed in sendCurrentPlayListToDE2" );
+//					return -1;
+//				}		
+//			}
+//				
+//			//new SocketSend().execute( Integer.toString( playList[i].length() ) );
+//			//Log.i( "list", "Sending: " +  Integer.toString( playList[i].length() ) );
+//			app.new SocketSend().execute( playList[i] );
+//			Log.i( "list", "Sending: " +  playList[i] );
+//		}
+		Log.i( "list", "Done sending playList" );
+		return 0;
+	}
+	
+	/** 
+	 * Loads a list of string from the internal storage
+	 * @param name	file name
+	 */
+	private String[] loadList( String name )	{
+		FileInputStream fis = null;
+		try {
+			fis = openFileInput( name );
+			
+			byte[] buf = new byte[255];
+			String temp = new String();
+			int i;
+			
+			int bytesRead;
+			while ( (bytesRead = fis.read( buf )) != -1 ) {
+				Log.i( "playList", "bytesRead is: " + bytesRead );
+				temp = temp.concat( new String( buf, 0, bytesRead, "US-ASCII" ));			
+			}
+			Log.i( "playList", "bytesRead is: " + bytesRead );
+			
+			String[] str = temp.split("\\.");
+			
+			for ( i = 0; i < str.length; i++)
+				Log.i( "ss", "str[" + i + " ]: " + str[i] );
+			
+			return str;
+		} 
+		catch (FileNotFoundException e) {
+			Log.i( "Exception", "File: " + name + " is not found." );
+		} 
+		catch (IOException e) {
+			Log.i( "Exception", "fis.read() threw an IOException for file: " + name + "." );
+		}
+		finally {
+			try {
+				fis.close();
+			} 
+			catch (IOException e) {
+				Log.i( "Exception", "Failed close file: " + name + "." );
+			}
+		}
+				
+		return null;
+	}
+	
+	// TODO remove this later
 	private ArrayList<HashMap<String, String>> gethardCodedList() {
 		ArrayList<HashMap<String, String>> lis = new ArrayList<HashMap<String, String>>();
 
-		HashMap<String,String> item1 = new HashMap<String,String>(); 
+		HashMap<String,String> item1 = new HashMap<String,String>();
+		item1.put( "ID", "01");
 		item1.put( "Song", "song1" ); 
 		item1.put( "Artist", "artist1" ); 
 		lis.add( item1 );
 		HashMap<String,String> item2 = new HashMap<String,String>(); 
+		item2.put( "ID", "02");
 		item2.put( "Song", "song2" ); 
 		item2.put( "Artist", "artist2" ); 
 		lis.add( item2 );
-		HashMap<String,String> item3 = new HashMap<String,String>(); 
+		HashMap<String,String> item3 = new HashMap<String,String>();
+		item3.put( "ID", "03");
 		item3.put( "Song", "song3" ); 
 		item3.put( "Artist", "artist3" ); 
 		lis.add( item3 );

@@ -72,8 +72,22 @@
             android:id="@+id/button1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:onClick="loadListFromFile"
+            android:text="Load" />
+  
+         <Button
+            android:id="@+id/button2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="saveNewList"
+            android:text="Save" />
+         
+        <Button
+            android:id="@+id/button3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:onClick="sendList"
-            android:text="Create" />
+            android:text="Send" />
 
     </LinearLayout>
 
