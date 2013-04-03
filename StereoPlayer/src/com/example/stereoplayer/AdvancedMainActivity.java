@@ -272,14 +272,19 @@ public class AdvancedMainActivity extends Activity
 	public void onActivityResult(int requestCode, int resultCode, Intent data) 
 	{   
 		super.onActivityResult(requestCode, resultCode, data);
-		Toast.makeText(this, "backFromDrag", Toast.LENGTH_SHORT).show();
-		String[] result = loadList("test");
-		if (result != null)
+		if (requestCode == dragDrop && resultCode == Activity.RESULT_OK)
 		{
-			Toast.makeText(this, "playlist test loaded", Toast.LENGTH_SHORT).show();
-			for (int i =0; i < result.length; i++)
-				Log.i("load",result[i]);
+			Toast.makeText(this, "backFromDrag", Toast.LENGTH_SHORT).show();
+			String[] result = loadList("test");
+			if (result != null)
+			{
+				Toast.makeText(this, "playlist test loaded", Toast.LENGTH_SHORT).show();
+				for (int i =0; i < result.length; i++)
+					Log.i("load",result[i]);
+			}
 		}
+		else if (resultCode == Activity.RESULT_CANCELED)
+			Toast.makeText(this, "action cancelled", Toast.LENGTH_SHORT).show();
 	}
 
 	public void initializeList(String[] playlist)
