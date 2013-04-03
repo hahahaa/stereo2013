@@ -36,10 +36,10 @@ public class Piano extends Activity {
 		app = (MyApplication) getApplication();
 	}
 	
-	public void playDoD(View view)
+	/*public void playDoD(View view)
 	{
 		app.new SocketSend().execute("DoD");
-	}
+	}*/
 	
 	public void playRe(View view)
 	{
@@ -97,7 +97,10 @@ public class Piano extends Activity {
 			public boolean onTouch(View v, MotionEvent event) {
 				switch(event.getAction()){
 				   case MotionEvent.ACTION_DOWN:
+				   {
 					   vibrator.vibrate(300);
+					   app.new SocketSend().execute("DoD");
+				   }
 				   break;
 				   case MotionEvent.ACTION_UP:
 					   //add code here

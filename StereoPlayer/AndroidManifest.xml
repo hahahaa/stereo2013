@@ -27,7 +27,8 @@
         <activity android:name=".LoadingScreenActivity" />
         <activity android:name=".AdvancedMainActivity" />
         <activity android:name=".DragDropPlaylist" />
-        <activity android:name=".Piano" />
+        <activity android:name=".Piano"
+            android:screenOrientation="landscape" />
     </application>
 
 </manifest>
