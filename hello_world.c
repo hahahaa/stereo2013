@@ -81,6 +81,8 @@ typedef struct {
 	char* time;
 } SongDetail;
 
+SongDetail** songDetailList;
+
 /* Device references */
 alt_up_sd_card_dev *sd_card_reference;
 alt_up_av_config_dev * av_config;
@@ -122,7 +124,7 @@ int isThereSomething();
 void clearMiddleManBuffer();
 
 /* Song Functions */
-int playSong( short int file_handle, int state );
+int playSong( short int file_handle, int state, int length );
 void stopSong( short int file_handle );
 int nextSong( int next );
 void audio_isr( void * context, unsigned int irq_id );
@@ -167,7 +169,8 @@ int main()
 	alt_up_character_lcd_set_cursor_pos(char_lcd_dev, 0, 0);
 	alt_up_character_lcd_string(char_lcd_dev, "READING SD CARD ");
 
-	SongDetail** songDetailList = getListOfSongDetails( &numSongs );
+	songDetailList = getListOfSongDetails( &numSongs );
+
 	readSong( A3, MIX_SONG_SIZE, "A3.wav");
 	readSong( B3, MIX_SONG_SIZE, "B3.wav");
 	readSong( C3, MIX_SONG_SIZE, "C3.wav");
@@ -319,13 +322,13 @@ int updateStateFromUART( int prevState )
 	}
 	else if( strcmp(temp, "D") == 0)	//raise volume
 	{
-		sendStringToMiddleMan( "D" );
+		//sendStringToMiddleMan( "D" );
 		volume--;
 		printf("volume = %d\n", volume);
 	}
 	else if( strcmp(temp, "U") == 0)	//lower volume
 	{
-		sendStringToMiddleMan( "U" );
+		//sendStringToMiddleMan( "U" );
 		volume++;
 		printf("volume = %d\n", volume);
 	}
@@ -346,6 +349,29 @@ int updateStateFromUART( int prevState )
 	{
 		shuffle_flag = 0;
 		isListChanged = 1;
+	}
+	else if( strcmp(temp, "I") == 0)
+	{
+		// send the song index
+		char* songIndex = (char*)malloc( 3 );
+		sprintf( songIndex, "%d", findSong(songDetailList, numSongs, songDetailList[playList[currSong]]->id) );
+		sendHandShakedLongMessageToMiddleMan( 'I', songIndex );
+		free( songIndex );
+	}
+	else if( strcmp(temp, "V") == 0)
+	{
+		// send the volume
+		char* buf = (char*)malloc( 1 );
+		sprintf( buf, "%d", volume );
+		sendHandShakedLongMessageToMiddleMan( 'V', buf );
+		free( buf );
+	}
+	else if( strcmp(temp, "playlist") == 0)
+	{
+		printf("hehhehehehe\n");
+		alt_irq_disable(AUDIO_0_IRQ);
+		sendSongListToMiddleMan( songDetailList, numSongs );
+		alt_irq_enable(AUDIO_0_IRQ);
 	}
 
 	free(temp);
@@ -385,15 +411,16 @@ int updateStateFromKeysWhilePlaying( int prevState )
 	}
 	else if(key == 0x2)	//next
 	{
-		//state = NEXT_PLAY;
-		volume++;
-		printf("volume: %d\n", volume);
+		state = NEXT_PLAY;
+		//volume++;
+		//printf("volume: %d\n", volume);
 	}
 	else if(key == 0x1)
 	{
-		//state = PREV_PLAY;
-		volume--;
-		printf("volume: %d\n", volume);
+		state = PREV_PLAY;
+		//volume--;
+		//printf("volume: %d\n", volume);
+		//sendSongListToMiddleMan( songDetailList, numSongs );	//debug
 	}
 	return state;
 }
@@ -470,10 +497,11 @@ int runPlayingState( SongDetail** list )
 	char* songIndex = (char*)malloc( 3 );
 	//printf("numSongs: %d, currSong: %d, list[currSong]->id: %s\n", numSongs, currSong, list[ currSong ]->id);
 	sprintf( songIndex, "%d", findSong(list, numSongs, list[playList[currSong]]->id) );
+	printf("songIndex sent: %s\n", songIndex);
 	sendHandShakedLongMessageToMiddleMan( 'M', songIndex );
 	free( songIndex );
 
-	int state = playSong( file_handle, PLAYING_NORMAL );
+	int state = playSong( file_handle, PLAYING_NORMAL, atoi(list[playList[currSong]]->time) );
 	stopSong( file_handle );
 
 	if(state == NEXT_PLAY || state == PLAYING_NORMAL)
@@ -564,7 +592,7 @@ void audio_isr (void * context, unsigned int irq_id)
  * pass in the current state
  * return the next state
  */
-int playSong( short int file_handle, int currState)
+int playSong( short int file_handle, int currState, int length)
 {
 	alt_irq_disable(AUDIO_0_IRQ);
 
@@ -594,7 +622,8 @@ int playSong( short int file_handle, int currState)
 	alt_irq_enable(AUDIO_0_IRQ);
 
 	volatile int state = PLAYING_NORMAL;
-	//int time = 0;
+	int time = 0;
+	char buffer[5];
 	while(1)
 	{
 		state = updateState(state);
@@ -648,8 +677,14 @@ int playSong( short int file_handle, int currState)
 
 			if(isOneSec)
 			{
-				sendStringToMiddleMan( "O" );
+				time++;
+				//sendStringToMiddleMan( "O" );
+				sprintf( buffer, "%d", (int)time );
+				//alt_up_rs232_write_data( uart, (unsigned char) strlen(buffer) );
+				//sendStringToMiddleMan( buffer );
+				sendHandShakedLongMessageToMiddleMan( 'O', buffer );
 				isOneSec = 0;
+				//printf("time: %s\n", buffer);
 			}
 		}
 	}
@@ -673,8 +708,9 @@ void stopSong( short int file_handle )
 
 /*
  * set the next song playing
+ * if next == 0, play the previous song
  * if next == 1, play the next song
- * otherwise, play the previous song
+ * otherwise, play a random song
  */
 int nextSong( int next )
 {
@@ -698,12 +734,18 @@ int nextSong( int next )
 		{
 			tmp = (currSong + 1) % numSongs;
 		}
-		else
+		else if(next == 0)
 		{
 			if(currSong == 0)
 				tmp = numSongs - 1;
 			else
 				tmp  = (currSong - 1) % numSongs;
+		}
+		else
+		{
+			tmp = currSong;
+			while(tmp == currSong)
+				tmp = rand() % numSongs;
 		}
 	}
 	else
@@ -792,11 +834,11 @@ void receivePlayListFromMiddleMan( int* playList, int* size )
 void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 {
 	int i;
-	char* temp = malloc( MAX_DIGIT_OF_MAX_NUM_SONG );
-	sprintf( temp, "%d", numSong );
+	char* temp = malloc( 1 );
+	sprintf( temp, "%d", volume );
 	char* temp1 = malloc( 5 );	// need to make a constant
 
-	printf("numSong: %d\n", numSong);
+	printf("volume: %d\n", volume);
 	printf("Sending the message to the Middleman\n");
 	sendStringToMiddleMan( temp );
 	sendStringToMiddleMan( "." );
@@ -856,20 +898,20 @@ void sendHandShakedLongMessageToMiddleMan( char command, char* str )
 	char buffer[5]; // Gonna change the magic number
 
 	alt_up_rs232_write_data( uart, command );
-	printf( "Sent %c\n", command );
+	printf( "Sent command: %c\n", command );
 
 	sprintf( buffer, "%d", (int)strlen( str ) );
 	alt_up_rs232_write_data( uart, (int) strlen(buffer) );  // Number of digits of the number of chars of data
-	printf( "Sent %d\n", (int) strlen( buffer ) );
+	//printf( "Sent %d\n", (int) strlen( buffer ) );
 
 	char* buffer2 = malloc( (int) strlen( buffer ) + 1 );
 	sprintf( buffer2, "%d", (int) strlen( str ) );
 	sendStringToMiddleMan( buffer2 );  // Number of chars of data
-	printf( "Sent %s\n", buffer2 );
+	//printf( "Sent %s\n", buffer2 );
 
 	for ( i = 0; i < strlen(str); i++ )
 		alt_up_rs232_write_data( uart, str[i] );
-
+	printf("sendHandShakedLongMessageToMiddleMan done\n");
 	free( buffer2 );
 }
 
@@ -884,6 +926,8 @@ void sendStringToMiddleMan( char* str )
 
 	for ( i = 0; i < strlen(str); i++ )
 		alt_up_rs232_write_data( uart, str[i] );
+
+	printf("sendStringToMiddle: %s\n", str);	//debug
 }
 
 /* Reads a string from the middle man; the first byte needs to be the length of the string
