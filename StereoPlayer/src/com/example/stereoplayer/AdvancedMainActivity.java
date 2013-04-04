@@ -139,10 +139,12 @@ public class AdvancedMainActivity extends Activity
 								} 
 								else if (command.compareTo("U") == 0) 
 								{
+									songVolume++;
 									volumeT.setText("Volume = " + Integer.toString(songVolume));
 								} 
 								else if (command.compareTo("D") == 0) 
 								{
+									songVolume--;
 									volumeT.setText("Volume = " + Integer.toString(songVolume));
 								}
 								else if (command.compareTo("O") == 0) 
@@ -250,7 +252,6 @@ public class AdvancedMainActivity extends Activity
 		setContentView(R.layout.advanced_main);
 
 		app = (MyApplication)AdvancedMainActivity.this.getApplication();
-		songVolume = 0;
 
 		showStatus = Toast.makeText(this, "", Toast.LENGTH_SHORT);
 		
@@ -280,9 +281,11 @@ public class AdvancedMainActivity extends Activity
 		{
 			// tv.setText(String.valueOf(sb.getProgress()));
 			String line = "changing Volume:" + String.valueOf(sb.getProgress());
+			app.new SocketSend().execute( "Y" );
+			app.new SocketSend().execute( Integer.toString( sb.getProgress() ) );
 			
 			Toast.makeText(AdvancedMainActivity.this, line, Toast.LENGTH_SHORT).show();
- 
+
 		}
  
 		@Override
@@ -295,6 +298,9 @@ public class AdvancedMainActivity extends Activity
 		{
 
 			String line = "Final Volume:" + String.valueOf(sb.getProgress());
+			
+			app.new SocketSend().execute( "Y" );
+			app.new SocketSend().execute( Integer.toString( sb.getProgress() ) );
 			
 			Toast.makeText(AdvancedMainActivity.this, line, Toast.LENGTH_SHORT).show();
  
