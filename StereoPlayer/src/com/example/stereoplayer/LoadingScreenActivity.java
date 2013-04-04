@@ -28,8 +28,8 @@ import android.view.WindowManager;
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class LoadingScreenActivity  extends Activity {
 	
-//	private String ipStr = "206.87.114.68";
-	private String ipStr;
+	private final String thisIP = "206.87.114.68";
+	//private String ipStr;
 	private int portNumber = 50002;
 	
 	public class SocketConnect extends AsyncTask<Void, Void, Socket> {
@@ -38,7 +38,7 @@ public class LoadingScreenActivity  extends Activity {
 		protected Socket doInBackground(Void... voids) {
 			Log.i("flow", "SocketConnect: doInBackground" );
 			Socket s = null;
-			String ip = getipAddress();
+			String ip = thisIP;
 			Integer port = portNumber;
 			try {
 				s = new Socket(ip, port);

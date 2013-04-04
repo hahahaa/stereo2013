@@ -726,10 +726,14 @@ public class AdvancedMainActivity extends Activity
 
 				@SuppressWarnings("unchecked")
 				HashMap<String,String> item = (HashMap<String, String>) obj;
-				showStatus.setText(item.get("Id"));
+				String songId = item.get("Id");
+				showStatus.setText(songId);
 				showStatus.show();
 				//Toast.makeText(this, item.get("Song"), Toast.LENGTH_SHORT).show();
 				//new SocketSend().execute(item.get("Song") );
+				
+				app.new SocketSend().execute( "X" );
+				app.new SocketSend().execute( songId );
 			}
 		}
 				);
