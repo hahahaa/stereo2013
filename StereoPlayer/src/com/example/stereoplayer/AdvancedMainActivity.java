@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
@@ -757,6 +758,8 @@ public class AdvancedMainActivity extends Activity
 				//Drawable block = getWallpaper();
 				ListView listView = (ListView) findViewById(R.id.listView);
 				listView.setSelector(R.drawable.list_background);
+				View rowView = listView.getChildAt(position);
+				
 				//listView.set
 				//listView.setSelector(R.drawable.selectorv2);
 

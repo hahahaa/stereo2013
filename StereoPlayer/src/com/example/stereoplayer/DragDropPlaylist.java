@@ -64,6 +64,8 @@ public class DragDropPlaylist extends Activity {
 		String[] rawPlaylist = intent.getStringArrayExtra("rawPlaylist");
 		allSonglist = getListFromIntent( rawPlaylist );
 		newSongList = new ArrayList<HashMap<String, String>>();
+		
+		saveOriginalPlayList();
 
 		listSource.setTag("listSource");
 		listTarget.setTag("listTarget");
@@ -104,6 +106,15 @@ public class DragDropPlaylist extends Activity {
 			setResult(Activity.RESULT_OK, resultIntent);
 			finish();
 		}
+	}
+	
+	
+	public void saveOriginalPlayList()
+	{
+		String[] list = new String [allSonglist.size()];
+		for(int i = 0; i < list.length; i++)
+			list[i] = allSonglist.get(i).get("ID");
+		saveList( "allSong", list );
 	}
 	
 	/**
