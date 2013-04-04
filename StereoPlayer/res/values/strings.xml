@@ -13,7 +13,7 @@
     <string name="menu_settings">Settings</string>
     <string name="title_activity_main">381Project2</string>
     <string name="label_myip">My IP:</string>
-    <string name="play">Play</string>
+
     <string name="stop">Stop</string>
     <string name="refresh_socket">Show Sock.</string>
     <string name="song1">Song 1</string>
@@ -28,6 +28,13 @@
     <string name="PlayModeOrder">Normal</string>
     <string name="PlayModeShuffle">Shuffle</string>
     <string name="PlayModeRepeatOn">One</string>
+    
+    <string name="play">Play</string>
+    <string name="prev">Prev</string>
+    <string name="next">Next</string>
+    <string name="dragdrop">DragDrop</string>
+    <string name="piano">Piano</string>
+    
     <string name="PlayModeRepeatOff">List</string>
     <string name="title_activity_piano">Piano</string>
     <string name="Do_up">Do</string>

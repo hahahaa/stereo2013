@@ -26,7 +26,7 @@
          android:layout_marginTop="6dip"
          android:text="TextView"
          android:textColor="@color/text_selector"
-         android:textAppearance="?android:attr/textAppearanceMedium" >
+         android:textAppearance="?android:attr/textAppearanceLarge" >
      </TextView>
  	
           <TextView
@@ -35,7 +35,7 @@
          android:layout_height="wrap_content"
          android:layout_marginLeft="6dip"
          android:layout_marginTop="20dip"
-         android:textAppearance="?android:attr/textAppearanceSmall" 
+         android:textAppearance="?android:attr/textAppearanceMedium" 
          android:text="aa"
     	 android:textColor="#222"
  	    android:textSize="16sp"/>
@@ -50,7 +50,7 @@
         
      <RatingBar
          android:id="@+id/rating1"
-         style="?android:attr/ratingBarStyleSmall"
+         style="?android:attr/ratingBarStyleMedium"
          android:layout_width="wrap_content"
          android:layout_height="wrap_content"
          android:layout_marginTop="15dip"

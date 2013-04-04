@@ -25,7 +25,7 @@
             android:drawableTop="@drawable/ic_menu_play"
             android:onClick="playPauseSong"
             android:padding="5dp"
-            android:text="Play "
+            android:text="@string/play"
             android:textColor="@color/tab_font_colors"
             android:textStyle="bold" />
 
@@ -38,7 +38,7 @@
             android:drawableTop="@drawable/ic_menu_previous"
             android:onClick="prevSong"
             android:padding="5dp"
-            android:text="Prev."
+            android:text="@string/prev"
             android:textColor="@color/tab_font_colors"
             android:textStyle="bold" />
 
@@ -46,13 +46,12 @@
             android:id="@+id/button6"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
             android:layout_weight="1"
             android:background="@drawable/tab_indicator"
             android:drawableTop="@drawable/ic_menu_next"
             android:onClick="nextSong"
             android:padding="5dp"
-            android:text="Next "
+            android:text="@string/next"
             android:textColor="@color/tab_font_colors"
             android:textStyle="bold" />
 
@@ -96,27 +95,33 @@
         <SeekBar
             android:id="@+id/seekBar1"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
             android:max="8"
-            android:progress="4" />
+            android:progress="4" 
+            android:background="@drawable/bk_n"/>
 
         <Button
             android:id="@+id/button8"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
             android:onClick="openDragDropPlaylist"
-            android:text="DragDrop" />
+            android:background="@drawable/bk_n"
+            android:text="@string/dragdrop"
+            android:textSize="15sp" />
 
         <Button
             android:id="@+id/button9"
             style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="0.5"
+            android:layout_weight="1"
             android:onClick="openPiano"
-            android:text="Piano" />
+            android:background="@drawable/bk_n"
+            android:text="@string/piano"  
+            android:textSize="15sp"/>
+        
     </LinearLayout>
 
     <LinearLayout
