@@ -25,6 +25,7 @@
          android:layout_marginLeft="6dip"
          android:layout_marginTop="6dip"
          android:text="TextView"
+         android:textColor="@color/text_selector"
          android:textAppearance="?android:attr/textAppearanceMedium" >
      </TextView>
  	
