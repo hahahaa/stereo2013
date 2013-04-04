@@ -18,7 +18,7 @@
      android:layout_width="wrap_content"
      android:layout_height="wrap_content"
      android:orientation="horizontal"
-     android:layout_weight=".8" >
+     android:layout_weight=".7" >
         
        
      <TextView
@@ -43,22 +43,23 @@
  	    android:textSize="16sp"/>
  </LinearLayout>
 
-
-
   <LinearLayout
-     android:id="@+id/linearLayout1"
-     android:layout_width="wrap_content"
-     android:layout_height="wrap_content"
-     android:layout_weight=".2"
-     android:orientation="horizontal" 
-     android:layout_gravity="center">  
+      android:id="@+id/linearLayout1"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center"
+      android:layout_weight="0.14"
+      android:orientation="horizontal" >
         
      <RatingBar
+
          android:id="@+id/rating1"
          android:layout_marginTop="15dip"
          style="?android:attr/ratingBarStyleSmall"
          android:layout_width="wrap_content"
          android:layout_height="wrap_content"
+         android:layout_marginLeft="15dp"
+
          android:alpha="0.75"
          android:isIndicator="true"
          android:numStars="5"
