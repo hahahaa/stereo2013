@@ -323,7 +323,6 @@ public class AdvancedMainActivity extends Activity
 
 	public void initializeList(String[] playlist)
 	{
-
 		Log.i("AdvancedMain", "SimpleMain - initializing Song List");
 		mainPlaylist = new ArrayList<String[]>();
 
