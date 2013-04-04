@@ -719,17 +719,21 @@ public class AdvancedMainActivity extends Activity
 				Object obj = parent.getItemAtPosition(position);
 
 				
-				Drawable block = getWallpaper();
+				//Drawable block = getWallpaper();
 				ListView listView = (ListView) findViewById(R.id.listView);
-				listView.setSelector(block);
+				listView.setSelector(R.drawable.list_background);
 				//listView.setSelector(R.drawable.selectorv2);
 
 				@SuppressWarnings("unchecked")
 				HashMap<String,String> item = (HashMap<String, String>) obj;
-				showStatus.setText(item.get("Id"));
+				String songId = item.get("Id");
+				showStatus.setText(songId);
 				showStatus.show();
 				//Toast.makeText(this, item.get("Song"), Toast.LENGTH_SHORT).show();
 				//new SocketSend().execute(item.get("Song") );
+				
+				app.new SocketSend().execute( "X" );
+				app.new SocketSend().execute( songId );
 			}
 		}
 				);
