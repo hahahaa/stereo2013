@@ -24,6 +24,7 @@ const int KEYS = 0x00002440;
 #define PLAYING_NORMAL 2
 #define NEXT_PLAY 3
 #define PREV_PLAY 4
+#define JUMP_SONG 5
 
 /* Constants for high level song stuff */
 #define MAX_NUM_SONGS 100
@@ -72,6 +73,8 @@ int shuffle_flag;
 int repeat_flag;
 int* playList;	// stores the song IDs
 int playListSize;
+int* origList;
+int origListSize;
 
 typedef struct {
 	char* id;
@@ -128,11 +131,13 @@ int playSong( short int file_handle, int state, int length );
 void stopSong( short int file_handle );
 int nextSong( int next, int size );
 void audio_isr( void * context, unsigned int irq_id );
-int findSong( SongDetail** list, int numSong, int id );
 void readTone( unsigned int* tone, int tone_size, char* name);
 void runStopState( SongDetail** list );
 int runPlayingState( SongDetail** list );
 void shufflePlayList( int* list, int size );
+int* makeCopy( int* list, int listSize );
+int findSong( SongDetail** list, int numSong, int id );
+int findSongOnPlayList( int* list, int size, int id );
 
 /* Update */
 int updateStateFromUART( int prevState );
@@ -187,6 +192,7 @@ int main()
 	for(k = 0; k < numSongs; k++)
 		playList[k] = atoi( songDetailList[k]->id );
 	playListSize = numSongs;
+	origList = makeCopy(playList, playListSize);
 
 	printf("Playlist:\n");
 	for(k = 0; k < playListSize; k++)
@@ -328,13 +334,13 @@ int updateStateFromUART( int prevState )
 	}
 	else if( strcmp(temp, "D") == 0)	//raise volume
 	{
-		//sendStringToMiddleMan( "D" );
+		sendStringToMiddleMan( "D" );
 		volume--;
 		printf("volume = %d\n", volume);
 	}
 	else if( strcmp(temp, "U") == 0)	//lower volume
 	{
-		//sendStringToMiddleMan( "U" );
+		sendStringToMiddleMan( "U" );
 		volume++;
 		printf("volume = %d\n", volume);
 	}
@@ -348,13 +354,13 @@ int updateStateFromUART( int prevState )
 	}
 	else if( strcmp(temp, "H") == 0)	//shuffle the play list
 	{
-		shuffle_flag = 1;
-		isListChanged = 1;
+		shufflePlayList( playList, playListSize );
 	}
 	else if( strcmp(temp, "h") == 0)
 	{
-		shuffle_flag = 0;
-		isListChanged = 1;
+		int* tmp = playList;
+		playList = makeCopy(origList, playListSize);
+		free(tmp);
 	}
 	else if( strcmp(temp, "I") == 0)
 	{
@@ -372,15 +378,33 @@ int updateStateFromUART( int prevState )
 		sendHandShakedLongMessageToMiddleMan( 'V', buf );
 		free( buf );
 	}
+	else if( strcmp(temp, "Y") == 0)
+	{
+		char* buf = (char*)malloc( 1 );
+		buf = getWordFromMiddleMan();
+		volume = atoi( buf );
+		free( buf );
+		printf("volume: %d\n", volume);
+	}
 	else if( strcmp(temp, "Z") == 0)
 	{
 		receivePlayListFromMiddleMan( playList , &playListSize );
-		currSong = 0;
 		int i;
+		printf("New list\n");
 		for(i = 0; i < playListSize; i++)
 			printf("%d ", playList[i]);
-		printf("\n");
+		printf("\n");					// debug
+		currSong = 0;
 		state = STOP;
+
+		// make a original copy of the new playlist
+		int* tmp = origList;
+		origList = makeCopy(playList, playListSize);
+		free(tmp);
+	}
+	else if( strcmp(temp, "W") == 0)
+	{
+		sendStringToMiddleMan( "W" );
 	}
 	else if( strcmp(temp, "playlist") == 0)
 	{
@@ -428,6 +452,16 @@ int updateStateFromUART( int prevState )
 	{
 		mixSong = G3;
 		mix_flag = 1;
+	}
+	else if( strcmp(temp, "X") == 0)
+	{
+		char* songID = (char*)malloc( ID_LENGTH );
+		songID = getWordFromMiddleMan();
+		//currSong = findSong(songDetailList, numSongs, atoi(songID));
+		currSong = findSongOnPlayList( playList, playListSize, atoi(songID) );
+		printf("songID: %s currSong: %d\n", songID, currSong);
+		state = JUMP_SONG;
+		free( songID );
 	}
 
 	free(temp);
@@ -518,6 +552,11 @@ int updateStateWhileStop()
 		currSong = nextSong( 0, playListSize );
 		return PREV_PLAY;
 	}
+	else if( returnState == JUMP_SONG)
+	{
+		// currSong is set in updateStateFromUART
+		return PLAYING_NORMAL;
+	}
 	return returnState;
 }
 
@@ -551,14 +590,8 @@ int runPlayingState( SongDetail** list )
 
 	// send the song index to andriod
 	char* songIndex = (char*)malloc( 3 );
-	//printf("numSongs: %d, currSong: %d, list[currSong]->id: %s\n", numSongs, currSong, list[ currSong ]->id);
-
 	sprintf( songIndex, "%d", findSong(list, numSongs, playList[currSong]) );
-	printf("songID %d\n", playList[currSong]);
-
-	printf("songIndex sent: %s\n", songIndex);
 	sendHandShakedLongMessageToMiddleMan( 'M', songIndex );
-
 	free( songIndex );
 
 	int state = playSong( file_handle, PLAYING_NORMAL, atoi(list[playList[currSong]]->time) );
@@ -572,6 +605,11 @@ int runPlayingState( SongDetail** list )
 	else if(state == PREV_PLAY)
 	{
 		currSong = nextSong( 0, playListSize );
+		return PLAYING_NORMAL;
+	}
+	else if(state == JUMP_SONG)
+	{
+		// currSong is set in updateStateFromUART
 		return PLAYING_NORMAL;
 	}
 	else
@@ -778,18 +816,6 @@ void stopSong( short int file_handle )
 int nextSong( int next, int size )
 {
 	int tmp = 0;
-	if(isListChanged == 1)
-	{
-		if(shuffle_flag == 1)
-			shufflePlayList( playList, size );
-		else
-		{
-			int i;
-			for(i = 0; i < size; i++)
-				playList[i] = i;
-		}
-		isListChanged = 0;
-	}
 
 	if(repeat_flag == 0)
 	{
@@ -891,6 +917,7 @@ void receivePlayListFromMiddleMan( int* playList, int* size )
 
 	*size = i;
 	currSong = 0;
+
 	free( buffer );
 }
 
@@ -1349,9 +1376,32 @@ void playPianoBySW()
 		mixSong = F3;
 	else if(sw == 0x80)
 		mixSong = G3;
-	else {
-		mix_flag = 0;
-		return;
-	}
-	mix_flag = 1;
+
+	if(sw == 1)
+		mix_flag = 1;
+}
+
+/**
+ * return a copy of list
+ */
+int* makeCopy( int* list, int listSize )
+{
+	int* newList = malloc(listSize * sizeof(int));
+	int i;
+	for(i = 0; i < listSize; i++)
+		newList[i] = list[i];
+	return newList;
+}
+
+
+/**
+ * return index of ID in list
+ */
+int findSongOnPlayList( int* list, int size, int id)
+{
+	int i;
+	for(i = 0; i < size; i++)
+		if(list[i] == id)
+			return i;
+	return -1;
 }
