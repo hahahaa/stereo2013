@@ -753,6 +753,7 @@ public class AdvancedMainActivity extends Activity
 				//String stringval = (String) arg1;
 				Log.i("arg1", (String) arg1);
 				float i = Float.parseFloat((String)arg1);
+				i = i /2;
 				
 				RatingBar bar = (RatingBar) arg0;
 				bar.setRating(i);
