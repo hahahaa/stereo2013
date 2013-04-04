@@ -323,7 +323,6 @@ public class AdvancedMainActivity extends Activity
 
 	public void initializeList(String[] playlist)
 	{
-
 		Log.i("AdvancedMain", "SimpleMain - initializing Song List");
 		mainPlaylist = new ArrayList<String[]>();
 
@@ -370,12 +369,6 @@ public class AdvancedMainActivity extends Activity
 	/* Gets the current song index from DE2 */
 	public void getIndex() {
 		app.new SocketSend().execute("I");
-	}
-	
-	public void sendSongIdToDE2(View view)
-	{
-		
-		
 	}
 
 	/* Toggles mode from Order-Mode/Shuffle-Mode */
