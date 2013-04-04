@@ -265,11 +265,13 @@ public class AdvancedMainActivity extends Activity
 		if (mainPlaylist == null) initializeList(rawPlaylist);
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
 		
+		
+		// untest
 		sb=(SeekBar)findViewById(R.id.seekBar1);
 		sb.setOnSeekBarChangeListener(sbLis);
 	}
 
-
+	// untest
 	public OnSeekBarChangeListener sbLis=new OnSeekBarChangeListener()
 	{
 		
@@ -277,7 +279,9 @@ public class AdvancedMainActivity extends Activity
 		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) 
 		{
 			// tv.setText(String.valueOf(sb.getProgress()));
-			sb.setOnSeekBarChangeListener(progress);
+			String line = "changing Volume:" + String.valueOf(sb.getProgress());
+			
+			Toast.makeText(AdvancedMainActivity.this, line, Toast.LENGTH_SHORT).show();
  
 		}
  
@@ -290,6 +294,9 @@ public class AdvancedMainActivity extends Activity
 		public void onStopTrackingTouch(SeekBar seekBar) 
 		{
 
+			String line = "Final Volume:" + String.valueOf(sb.getProgress());
+			
+			Toast.makeText(AdvancedMainActivity.this, line, Toast.LENGTH_SHORT).show();
  
 		}
 	};
