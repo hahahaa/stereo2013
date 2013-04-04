@@ -724,6 +724,7 @@ public class AdvancedMainActivity extends Activity
 				//Drawable block = getWallpaper();
 				ListView listView = (ListView) findViewById(R.id.listView);
 				listView.setSelector(R.drawable.list_background);
+				//listView.set
 				//listView.setSelector(R.drawable.selectorv2);
 
 				@SuppressWarnings("unchecked")
