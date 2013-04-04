@@ -719,9 +719,9 @@ public class AdvancedMainActivity extends Activity
 				Object obj = parent.getItemAtPosition(position);
 
 				
-				Drawable block = getWallpaper();
+				//Drawable block = getWallpaper();
 				ListView listView = (ListView) findViewById(R.id.listView);
-				listView.setSelector(block);
+				listView.setSelector(R.drawable.list_background);
 				//listView.setSelector(R.drawable.selectorv2);
 
 				@SuppressWarnings("unchecked")
