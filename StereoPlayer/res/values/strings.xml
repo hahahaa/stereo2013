@@ -27,8 +27,8 @@
     <string name="currentTimeSeconds">00</string>
     <string name="PlayModeOrder">Normal</string>
     <string name="PlayModeShuffle">Shuffle</string>
-    <string name="PlayModeRepeatOn">RepeatOne</string>
-    <string name="PlayModeRepeatOff">RepeatList</string>
+    <string name="PlayModeRepeatOn">One</string>
+    <string name="PlayModeRepeatOff">List</string>
     <string name="title_activity_piano">Piano</string>
     <string name="Do_up">Do</string>
     <string name="Re">Re</string>

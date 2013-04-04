@@ -261,6 +261,8 @@ public class AdvancedMainActivity extends Activity
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
 	}
 
+	
+	
 	@Override
 	public void onResume()
 	{

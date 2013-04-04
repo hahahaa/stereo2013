@@ -18,7 +18,7 @@
         android:layout_height="wrap_content">
         
       <Button
-        android:text="Play" 
+        android:text="Play " 
         android:textColor="@color/tab_font_colors"
         android:textStyle="bold"
         android:drawableTop="@drawable/ic_menu_play"
@@ -32,7 +32,7 @@
 
        <Button
 
-        android:text="Previous" 
+        android:text="Prev." 
         android:textColor="@color/tab_font_colors"
         android:textStyle="bold"
         android:drawableTop="@drawable/ic_menu_previous"
@@ -45,7 +45,7 @@
         android:onClick="prevSong"/>  
         
       <Button
-        android:text="Next" 
+        android:text="Next " 
         android:textColor="@color/tab_font_colors"
         android:textStyle="bold"
         android:drawableTop="@drawable/ic_menu_next"
