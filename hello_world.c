@@ -44,7 +44,7 @@ const int KEYS = 0x00002440;
 #define WAV_HEADER_SIZE 44
 #define SAMPLE_SIZE 96
 //#define MIX_SONG_SIZE 690000
-#define MIX_SONG_SIZE 28000
+#define PIANO_SONG_SIZE 28000
 
 volatile int volume;
 volatile int stop_flag;
@@ -52,20 +52,22 @@ volatile int play_index;
 volatile int read_index;
 volatile unsigned int stream[SONG_SIZE];
 volatile int isOneSec;
-volatile int mix_index;
+volatile int piano_index;
+volatile int lock_uart;
 
 /* Piano tones */
-volatile unsigned int A3[MIX_SONG_SIZE];
-volatile unsigned int B3[MIX_SONG_SIZE];
-volatile unsigned int C3[MIX_SONG_SIZE];
-volatile unsigned int C4[MIX_SONG_SIZE];
-volatile unsigned int D3[MIX_SONG_SIZE];
-volatile unsigned int E3[MIX_SONG_SIZE];
-volatile unsigned int F3[MIX_SONG_SIZE];
-volatile unsigned int G3[MIX_SONG_SIZE];
+volatile unsigned int A3[PIANO_SONG_SIZE];
+volatile unsigned int B3[PIANO_SONG_SIZE];
+volatile unsigned int C3[PIANO_SONG_SIZE];
+volatile unsigned int C4[PIANO_SONG_SIZE];
+volatile unsigned int D3[PIANO_SONG_SIZE];
+volatile unsigned int E3[PIANO_SONG_SIZE];
+volatile unsigned int F3[PIANO_SONG_SIZE];
+volatile unsigned int G3[PIANO_SONG_SIZE];
 volatile unsigned int* mixSong;
 volatile int mix_flag;
 volatile int isListChanged;
+volatile int sendOneSec;
 
 int numSongs;
 int currSong;
@@ -161,13 +163,16 @@ int main()
 	repeat_flag = 0;
 	shuffle_flag = 0;
 	mix_flag = 0;
+	sendOneSec = 1;
+	lock_uart = 0;
 
-	mix_index = 0;
+	piano_index = 0;
 	play_index = 0;
 	read_index = 0;
 	isOneSec = 0;
 	numSongs = 0;
 	isListChanged = 0;
+	memset(&stream, 0, sizeof(stream));	// init to zeros
 
 	int state = STOP;
 	alt_up_character_lcd_init(char_lcd_dev);
@@ -176,14 +181,14 @@ int main()
 
 	songDetailList = getListOfSongDetails( &numSongs );
 
-	readSong( A3, MIX_SONG_SIZE, "A3.wav");
-	readSong( B3, MIX_SONG_SIZE, "B3.wav");
-	readSong( C3, MIX_SONG_SIZE, "C3.wav");
-	readSong( C4, MIX_SONG_SIZE, "C4.wav");
-	readSong( D3, MIX_SONG_SIZE, "D3.wav");
-	readSong( E3, MIX_SONG_SIZE, "E3.wav");
-	readSong( F3, MIX_SONG_SIZE, "F3.wav");
-	readSong( G3, MIX_SONG_SIZE, "G3.wav");
+	readSong( A3, PIANO_SONG_SIZE, "A3.wav");
+	readSong( B3, PIANO_SONG_SIZE, "B3.wav");
+	readSong( C3, PIANO_SONG_SIZE, "C3.wav");
+	readSong( C4, PIANO_SONG_SIZE, "C4.wav");
+	readSong( D3, PIANO_SONG_SIZE, "D3.wav");
+	readSong( E3, PIANO_SONG_SIZE, "E3.wav");
+	readSong( F3, PIANO_SONG_SIZE, "F3.wav");
+	readSong( G3, PIANO_SONG_SIZE, "G3.wav");
 	mixSong = A3;
 
 	// initialize the playlist
@@ -258,8 +263,6 @@ int main()
  */
 int updateState( int prevState )
 {
-	//playPianoBySW();
-
 	int returnState = prevState;
 	if( prevState == STOP )
 	{
@@ -364,11 +367,13 @@ int updateStateFromUART( int prevState )
 	}
 	else if( strcmp(temp, "I") == 0)
 	{
-		// send the song index
-		char* songIndex = (char*)malloc( 3 );
-		sprintf( songIndex, "%d", findSong(songDetailList, numSongs, playList[currSong]) );
-		sendHandShakedLongMessageToMiddleMan( 'I', songIndex );
-		free( songIndex );
+		// send the song ID
+		char* songID = (char*)malloc( 3 );
+		sprintf( songID, "%d", playList[currSong] );
+		printf("debuggg : %s\n", songID);
+		sendHandShakedLongMessageToMiddleMan( 'I', songID );
+		free( songID );
+		sendOneSec = 1;
 	}
 	else if( strcmp(temp, "V") == 0)
 	{
@@ -416,41 +421,49 @@ int updateStateFromUART( int prevState )
 	else if( strcmp(temp, "DoD") == 0)
 	{
 		mixSong = A3;
+		piano_index = 0;
 		mix_flag = 1;
 	}
 	else if( strcmp(temp, "Re") == 0)
 	{
 		mixSong = B3;
+		piano_index = 0;
 		mix_flag = 1;
 	}
 	else if( strcmp(temp, "Mi") == 0)
 	{
 		mixSong = C3;
+		piano_index = 0;
 		mix_flag = 1;
 	}
 	else if( strcmp(temp, "Fa") == 0)
 	{
 		mixSong = C4;
+		piano_index = 0;
 		mix_flag = 1;
 	}
 	else if( strcmp(temp, "So") == 0)
 	{
 		mixSong = D3;
+		piano_index = 0;
 		mix_flag = 1;
 	}
 	else if( strcmp(temp, "La") == 0)
 	{
 		mixSong = E3;
+		piano_index = 0;
 		mix_flag = 1;
 	}
 	else if( strcmp(temp, "Ti") == 0)
 	{
 		mixSong = F3;
+		piano_index = 0;
 		mix_flag = 1;
 	}
 	else if( strcmp(temp, "DoU") == 0)
 	{
 		mixSong = G3;
+		piano_index = 0;
 		mix_flag = 1;
 	}
 	else if( strcmp(temp, "X") == 0)
@@ -462,6 +475,37 @@ int updateStateFromUART( int prevState )
 		printf("songID: %s currSong: %d\n", songID, currSong);
 		state = JUMP_SONG;
 		free( songID );
+	}
+	else if( strcmp(temp, "o") == 0)
+	{
+		sendOneSec = 0;
+	}
+	else if( strcmp(temp, "T") == 0)
+	{
+		sendOneSec = 1;
+	}
+	else if( strcmp(temp, "K") == 0)
+	{
+		lock_uart = 1;
+	}
+	else if( strcmp(temp, "k") == 0)
+	{
+		lock_uart = 0;
+	}
+	else if( strcmp(temp, "Q") == 0)
+	{
+		char* songID = (char*)malloc( 3 );
+		sprintf( songID, "%d", playList[currSong] );
+		sendHandShakedLongMessageToMiddleMan( 'Q', songID );
+		free( songID );
+	}
+	else if( strcmp(temp, "E") == 0)
+	{
+		currSong = nextSong( 2, playListSize);
+		if(state == PLAYING_NORMAL)
+			state = NEXT_PLAY;
+		else
+			state = PLAYING_NORMAL;
 	}
 
 	free(temp);
@@ -588,11 +632,11 @@ int runPlayingState( SongDetail** list )
 		exit(1);
 	}
 
-	// send the song index to andriod
-	char* songIndex = (char*)malloc( 3 );
-	sprintf( songIndex, "%d", findSong(list, numSongs, playList[currSong]) );
-	sendHandShakedLongMessageToMiddleMan( 'M', songIndex );
-	free( songIndex );
+	// send the song ID to andriod
+	char* songID = (char*)malloc( 3 );
+	sprintf( songID, "%d", playList[currSong] );
+	sendHandShakedLongMessageToMiddleMan( 'M', songID );
+	free( songID );
 
 	int state = playSong( file_handle, PLAYING_NORMAL, atoi(list[playList[currSong]]->time) );
 	stopSong( file_handle );
@@ -648,16 +692,17 @@ void audio_isr (void * context, unsigned int irq_id)
 	{
 		song_sample[cc] = stream[play_index];
 
-		if(mix_flag == 1)
+		if(mix_flag == 1)	//piano
 		{
-			song_sample[cc] = song_sample[cc] + mixSong[mix_index];
-			mix_index++;
-			if(mix_index == MIX_SONG_SIZE)
+			song_sample[cc] = song_sample[cc] + mixSong[piano_index];
+			piano_index++;
+			if(piano_index == PIANO_SONG_SIZE)
 			{
-				mix_index = 0;
+				piano_index = 0;
 				mix_flag = 0;
 			}
-			song_sample[cc] = song_sample[cc]>>1;
+			//if(((song_sample & 0x10)>>4) == 1)
+			//	song_sample[cc] = song_sample[cc]>>1;
 		}
 
 		play_index++;
@@ -700,7 +745,7 @@ int playSong( short int file_handle, int currState, int length)
 	int buf[2];
 	play_index = 0;
 	read_index = 0;
-	mix_index = 0;
+	piano_index = 0;
 	stop_flag = 0;
 	isOneSec = 0;
 
@@ -779,13 +824,11 @@ int playSong( short int file_handle, int currState, int length)
 			if(isOneSec)
 			{
 				time++;
-				//sendStringToMiddleMan( "O" );
+				IOWR_8DIRECT(leds, 0, (char)(stream[play_index]>>4));
 				sprintf( buffer, "%d", (int)time );
-				//alt_up_rs232_write_data( uart, (unsigned char) strlen(buffer) );
-				//sendStringToMiddleMan( buffer );
-				sendHandShakedLongMessageToMiddleMan( 'O', buffer );
+				if(sendOneSec == 1)
+					sendHandShakedLongMessageToMiddleMan( 'O', buffer );
 				isOneSec = 0;
-				//printf("time: %s\n", buffer);
 			}
 		}
 	}
@@ -924,14 +967,18 @@ void receivePlayListFromMiddleMan( int* playList, int* size )
 void sendSongListToMiddleMan( SongDetail** songList, int numSong )
 {
 	int i;
+
 	char* temp = malloc( 1 );
 	sprintf( temp, "%d", volume );
 	char* temp1 = malloc( 5 );	// need to make a constant
-
-	printf("volume: %d\n", volume);
-	printf("Sending the message to the Middleman\n");
 	sendStringToMiddleMan( temp );
 	sendStringToMiddleMan( "." );
+
+	char* songID = malloc(3);
+	sprintf( songID, "%d", playList[currSong]);
+	sendStringToMiddleMan( songID );
+	sendStringToMiddleMan( "." );
+	free(songID);
 
 	while ( !isThereSomething() )
 	{
@@ -984,6 +1031,8 @@ void sendOneSongDetailToMiddleMan( SongDetail* song )
  */
 void sendHandShakedLongMessageToMiddleMan( char command, char* str )
 {
+	if(lock_uart == 1)
+		return;
 	int i;
 	char buffer[5]; // Gonna change the magic number
 
@@ -1010,6 +1059,8 @@ void sendHandShakedLongMessageToMiddleMan( char command, char* str )
  */
 void sendStringToMiddleMan( char* str )
 {
+	if(lock_uart == 1)
+		return;
 	int i;
 
 	//alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
@@ -1350,6 +1401,7 @@ void readSong( volatile unsigned int* song, int size, char* fileName)
 		song[cc] = ((buf[1]<<8)|buf[0]);
 		if( (song[cc] & 0x8000) > 0 )
 			song[cc] = song[cc] | 0xFFFF0000;
+		song[cc] = song[cc]<<1;
 	}
 	closeFileInSD( file_handle );
 }
