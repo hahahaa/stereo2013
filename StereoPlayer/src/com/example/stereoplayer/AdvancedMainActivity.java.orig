@@ -121,7 +121,11 @@ public class AdvancedMainActivity extends Activity
 						{
 							public void run() 
 							{								
+<<<<<<< HEAD
 								//TextView volumeT = (TextView) findViewById(R.id.viewText1);
+=======
+//								TextView volumeT = (TextView) findViewById(R.id.viewText1);
+>>>>>>> 406876d57c36101c28e05a1aa4d17769ccb066c9
 								TextView text = (TextView) findViewById(R.id.viewText2);
 
 								if ( command.compareTo( "P" ) == 0 )
@@ -140,12 +144,20 @@ public class AdvancedMainActivity extends Activity
 								else if (command.compareTo("U") == 0) 
 								{
 									songVolume++;
+<<<<<<< HEAD
 									//volumeT.setText("Volume = " + Integer.toString(songVolume));
+=======
+//									volumeT.setText("Volume = " + Integer.toString(songVolume));
+>>>>>>> 406876d57c36101c28e05a1aa4d17769ccb066c9
 								} 
 								else if (command.compareTo("D") == 0) 
 								{
 									songVolume--;
+<<<<<<< HEAD
 									//volumeT.setText("Volume = " + Integer.toString(songVolume));
+=======
+//									volumeT.setText("Volume = " + Integer.toString(songVolume));
+>>>>>>> 406876d57c36101c28e05a1aa4d17769ccb066c9
 								}
 								else if (command.compareTo("O") == 0) 
 								{
