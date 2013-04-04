@@ -48,6 +48,7 @@
         android:text="Next " 
         android:textColor="@color/tab_font_colors"
         android:textStyle="bold"
+        android:layout_marginTop="1dp"
         android:drawableTop="@drawable/ic_menu_next"
         android:background="@drawable/tab_indicator"
         android:padding="5dp"

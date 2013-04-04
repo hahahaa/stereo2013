@@ -25,6 +25,8 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.SimpleAdapter;
 import android.widget.SimpleAdapter.ViewBinder;
 import android.widget.TextView;
@@ -51,6 +53,8 @@ public class AdvancedMainActivity extends Activity
 	private int currentSongPositionInTime;
 	private ArrayList<HashMap<String, String>> list;
 	private Toast showStatus;
+	
+	SeekBar sb;
 
 	public class TCPReadTimerTask extends TimerTask 
 	{		
@@ -259,8 +263,37 @@ public class AdvancedMainActivity extends Activity
 		currentSongPositionInTime = intent.getIntExtra("progress", 0);
 		if (mainPlaylist == null) initializeList(rawPlaylist);
 		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
+		
+		sb=(SeekBar)findViewById(R.id.seekBar1);
+		sb.setOnSeekBarChangeListener(sbLis);
 	}
 
+
+	public OnSeekBarChangeListener sbLis=new OnSeekBarChangeListener()
+	{
+		
+		@Override
+		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) 
+		{
+			// tv.setText(String.valueOf(sb.getProgress()));
+			sb.setOnSeekBarChangeListener(progress);
+ 
+		}
+ 
+		@Override
+		public void onStartTrackingTouch(SeekBar seekBar) {
+
+		}
+ 
+		@Override
+		public void onStopTrackingTouch(SeekBar seekBar) 
+		{
+
+ 
+		}
+	};
+	
+	
 	
 	
 	@Override
