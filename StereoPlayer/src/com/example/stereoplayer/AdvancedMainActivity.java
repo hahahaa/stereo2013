@@ -121,7 +121,7 @@ public class AdvancedMainActivity extends Activity
 						{
 							public void run() 
 							{								
-								TextView volumeT = (TextView) findViewById(R.id.viewText1);
+//								TextView volumeT = (TextView) findViewById(R.id.viewText1);
 								TextView text = (TextView) findViewById(R.id.viewText2);
 
 								if ( command.compareTo( "P" ) == 0 )
@@ -140,12 +140,12 @@ public class AdvancedMainActivity extends Activity
 								else if (command.compareTo("U") == 0) 
 								{
 									songVolume++;
-									volumeT.setText("Volume = " + Integer.toString(songVolume));
+//									volumeT.setText("Volume = " + Integer.toString(songVolume));
 								} 
 								else if (command.compareTo("D") == 0) 
 								{
 									songVolume--;
-									volumeT.setText("Volume = " + Integer.toString(songVolume));
+//									volumeT.setText("Volume = " + Integer.toString(songVolume));
 								}
 								else if (command.compareTo("O") == 0) 
 								{
