@@ -1,138 +1,124 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:background="@drawable/background"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
+    android:background="@drawable/background"
     android:orientation="vertical" >
-    
-    	<TextView
-         android:layout_width="wrap_content"
-         android:layout_height="wrap_content"
-         android:text="  "
-         android:textSize="6sp"/>
-    	
-    	
-         <LinearLayout
-        android:background="@drawable/tabbar_background"
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=" "
+        android:textSize="6sp" />
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        
-      <Button
-        android:text="Play " 
-        android:textColor="@color/tab_font_colors"
-        android:textStyle="bold"
-        android:drawableTop="@drawable/ic_menu_play"
-        android:background="@drawable/tab_indicator"
-        android:padding="5dp"
-        android:layout_weight="1"
-        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:id="@+id/button2"
-        android:onClick="playPauseSong"/>  
+        android:background="@drawable/tabbar_background" >
 
-       <Button
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/tab_indicator"
+            android:drawableTop="@drawable/ic_menu_play"
+            android:onClick="playPauseSong"
+            android:padding="5dp"
+            android:text="Play "
+            android:textColor="@color/tab_font_colors"
+            android:textStyle="bold" />
 
-        android:text="Prev." 
-        android:textColor="@color/tab_font_colors"
-        android:textStyle="bold"
-        android:drawableTop="@drawable/ic_menu_previous"
-        android:background="@drawable/tab_indicator"
-        android:padding="5dp"
-        android:layout_weight="1"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:id="@+id/button7"
-        android:onClick="prevSong"/>  
-        
-      <Button
-        android:text="Next " 
-        android:textColor="@color/tab_font_colors"
-        android:textStyle="bold"
-        android:layout_marginTop="1dp"
-        android:drawableTop="@drawable/ic_menu_next"
-        android:background="@drawable/tab_indicator"
-        android:padding="5dp"
-        android:layout_weight="1"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:id="@+id/button6"
-        android:onClick="nextSong"/>
-      
-      <ToggleButton
-           
-        android:onClick="onClickPlayOrderMode"
-        android:id="@+id/toggleButton1"
-        android:text="@string/PlayModeOrder"
-        android:textOff="@string/PlayModeOrder"
-        android:textOn="@string/PlayModeShuffle"
-        
-        android:textColor="@color/tab_font_colors"
-        android:textStyle="bold"
-        android:drawableTop="@drawable/ic_menu_mode"
-        android:background="@drawable/tab_indicator"
-        android:padding="5dp"
-        android:layout_weight="1"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"/> 
-      
-     <ToggleButton
-        
-        android:onClick="onClickPlayRepeatMode"
-        android:id="@+id/toggleButton2"
-        android:text="@string/PlayModeRepeatOff"
-        android:textOff="@string/PlayModeRepeatOff"
-        android:textOn="@string/PlayModeRepeatOn"
-        
-        android:textColor="@color/tab_font_colors"
-        android:textStyle="bold"
-        android:drawableTop="@drawable/ic_menu_repeat"
-        android:background="@drawable/tab_indicator"
-        android:padding="5dp"
-        android:layout_weight="1"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"/>  
+        <Button
+            android:id="@+id/button7"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/tab_indicator"
+            android:drawableTop="@drawable/ic_menu_previous"
+            android:onClick="prevSong"
+            android:padding="5dp"
+            android:text="Prev."
+            android:textColor="@color/tab_font_colors"
+            android:textStyle="bold" />
 
+        <Button
+            android:id="@+id/button6"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:layout_weight="1"
+            android:background="@drawable/tab_indicator"
+            android:drawableTop="@drawable/ic_menu_next"
+            android:onClick="nextSong"
+            android:padding="5dp"
+            android:text="Next "
+            android:textColor="@color/tab_font_colors"
+            android:textStyle="bold" />
 
-         </LinearLayout>
-    	
+        <ToggleButton
+            android:id="@+id/toggleButton1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/tab_indicator"
+            android:drawableTop="@drawable/ic_menu_mode"
+            android:onClick="onClickPlayOrderMode"
+            android:padding="5dp"
+            android:text="@string/PlayModeOrder"
+            android:textColor="@color/tab_font_colors"
+            android:textOff="@string/PlayModeOrder"
+            android:textOn="@string/PlayModeShuffle"
+            android:textStyle="bold" />
+
+        <ToggleButton
+            android:id="@+id/toggleButton2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/tab_indicator"
+            android:drawableTop="@drawable/ic_menu_repeat"
+            android:onClick="onClickPlayRepeatMode"
+            android:padding="5dp"
+            android:text="@string/PlayModeRepeatOff"
+            android:textColor="@color/tab_font_colors"
+            android:textOff="@string/PlayModeRepeatOff"
+            android:textOn="@string/PlayModeRepeatOn"
+            android:textStyle="bold" />
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:orientation="horizontal" >
 
-      <SeekBar
-       android:id="@+id/seekBar1"
-       android:layout_width="wrap_content"
-       android:layout_height="wrap_content"
-       android:max="8"  
-       android:progress="4"         
-       android:layout_weight="0.5"/>
-        
+        <SeekBar
+            android:id="@+id/seekBar1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            android:max="8"
+            android:progress="4" />
 
-      <Button
-        android:id="@+id/button8"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:onClick="openDragDropPlaylist"
-        android:text="DragDrop" 
-        android:layout_weight="0.5"/>
+        <Button
+            android:id="@+id/button8"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            android:onClick="openDragDropPlaylist"
+            android:text="DragDrop" />
 
-            <Button
-                android:id="@+id/button9"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Piano"
-                android:onClick="openPiano"
-                android:layout_weight="0.5" />
-        
-
+        <Button
+            android:id="@+id/button9"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            android:onClick="openPiano"
+            android:text="Piano" />
     </LinearLayout>
 
-    
-    
-    
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -141,84 +127,74 @@
         <LinearLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" 
-             android:layout_gravity="bottom">
-
-         
+            android:layout_gravity="bottom"
+            android:orientation="horizontal" >
 
             <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" 
-            android:layout_gravity="bottom" >
-            
-            <TextView
-                android:id="@+id/textView1"
-                android:layout_width="wrap_content"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/currentTimeMinute"
-                android:textAppearance="?android:attr/textAppearanceLarge"/>
+                android:layout_gravity="bottom"
+                android:orientation="horizontal" >
 
-            <TextView
-                android:id="@+id/textView2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/timeColon"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                <TextView
+                    android:id="@+id/textView1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/currentTimeMinute"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
 
-            <TextView
-                android:id="@+id/textView3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/currentTimeSeconds"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                <TextView
+                    android:id="@+id/textView2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/timeColon"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
 
-            <TextView
-                android:id="@+id/textView4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/timeDivider"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                <TextView
+                    android:id="@+id/textView3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/currentTimeSeconds"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
 
-            <TextView
-                android:id="@+id/textView5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/songTimeMinute"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                <TextView
+                    android:id="@+id/textView4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/timeDivider"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
 
-            <TextView
-                android:id="@+id/textView6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/timeColon"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                <TextView
+                    android:id="@+id/textView5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/songTimeMinute"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
 
-            <TextView
-                android:id="@+id/textView7"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/songTimeSecond"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                <TextView
+                    android:id="@+id/textView6"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/timeColon"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
 
-
-            
+                <TextView
+                    android:id="@+id/textView7"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/songTimeSecond"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
             </LinearLayout>
         </LinearLayout>
-
     </LinearLayout>
 
+    <ImageView
+        android:id="@+id/imageView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/border_ups" >
+    </ImageView>
 
-     
-   	 <ImageView
-   	     android:id="@+id/imageView3"
-   	     android:layout_width="wrap_content"
-   	     android:layout_height="wrap_content"
-   	     android:src="@drawable/border_ups" >
-	</ImageView>
-    
-    
-   	 
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -230,36 +206,24 @@
         android:minHeight="10dp"
         android:progress="0"
         android:progressDrawable="@drawable/myprogressbar" />
-    
-     	 <ImageView
-   	     android:id="@+id/imageView5"
-   	     android:layout_width="wrap_content"
-   	     android:layout_height="wrap_content"
-   	     android:src="@drawable/border_downs" >
-	</ImageView>
-    
 
-     <TextView
+    <ImageView
+        android:id="@+id/imageView5"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-      	android:text="  "
-        android:textSize="10sp"/>
-    
+        android:src="@drawable/border_downs" >
+    </ImageView>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=" "
+        android:textSize="10sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical" >
-
-        <TextView
-            android:id="@+id/viewText1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#222"
-            android:ems="10"
-            android:text="Volume = 4"
-            android:textColor="#FFF"
-            android:textSize="30dp" />
 
         <TextView
             android:id="@+id/viewText2"
@@ -274,43 +238,10 @@
             android:textSize="30dp" >
         </TextView>
 
-
         <ListView
             android:id="@+id/listView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
     </LinearLayout>
 
-</LinearLayout><!-- android:onClick="sendMessage" -->
-
-
-
-      
-<!--       <Button -->
-<!--         android:text="Pause"  -->
-<!--         android:textColor="@color/tab_font_colors" -->
-<!--         android:textStyle="bold" -->
-<!--         android:drawableTop="@drawable/ic_menu_pause" -->
-<!--         android:background="@drawable/tab_indicator" -->
-<!--         android:padding="5dp" -->
-<!--         android:layout_weight="1" -->
-<!--         android:layout_width="0dp" -->
-<!--         android:layout_height="wrap_content" -->
-<!--         android:id="@+id/button1"/>   -->
-
-<!--         <Button -->
-<!--             android:id="@+id/button3" -->
-<!--             android:layout_width="wrap_content" -->
-<!--             android:layout_height="wrap_content" -->
-<!--             android:layout_weight="0.3" -->
-<!--             android:onClick="upVolume" -->
-<!--             android:text="Up" /> -->
-
-<!--         <Button -->
-<!--             android:id="@+id/button4" -->
-<!--             android:layout_width="wrap_content" -->
-<!--             android:layout_height="wrap_content" -->
-<!--             android:layout_weight="0.3" -->
-<!--             android:onClick="downVolume" -->
-<!--             android:text="Down" /> -->
-
+</LinearLayout>
