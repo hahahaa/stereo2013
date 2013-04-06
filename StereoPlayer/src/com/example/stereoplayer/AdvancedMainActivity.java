@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.example.stereoplayer.MyApplication.SocketSend;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -54,6 +56,7 @@ public class AdvancedMainActivity extends Activity
 	private int currentSongPositionInTime;
 	private ArrayList<HashMap<String, String>> list;
 	private Toast showStatus;
+	private int latestSongId;
 	
 	SeekBar sb;
 
@@ -167,7 +170,12 @@ public class AdvancedMainActivity extends Activity
 									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar);
 									pb.setProgress( 0 );
 
-									songIndex = Integer.parseInt( message );
+									int songId = Integer.parseInt( message );
+									Log.i("songId",Integer.toString(songId));
+									songIndex = findSong(songId);
+									MyApplication myapp = (MyApplication)AdvancedMainActivity.this.getApplication();
+									myapp.currSongId = songId;
+									latestSongId = songId;
 									Log.i("indexNumber", Integer.toString(songIndex));
 									text.setText("Playing: " + mainPlaylist.get(songIndex)[1] );
 
@@ -176,13 +184,21 @@ public class AdvancedMainActivity extends Activity
 								}
 								else if ( command.compareTo( "I" ) == 0 )
 								{
-									songIndex = Integer.parseInt( message );
+									showStatus.setText("got i");
+									showStatus.show();
+									int songId = Integer.parseInt( message );
+									songIndex = findSong(songId);
+									MyApplication myapp = (MyApplication)AdvancedMainActivity.this.getApplication();
+									myapp.currSongId = songId;
+									latestSongId = songId;
 									Log.i("indexNumber", Integer.toString(songIndex));
 									
-									updateProgressBar();
+									ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar);
+									bar.setProgress(0);
+									//updateProgressBar();
 									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
 									setupTime( songLength );
-									updateTime( currentSongPositionInTime, songLength );
+									//updateTime( currentSongPositionInTime, songLength );
 									//text.setText("Playing: " + mainPlaylist.get(songIndex)[1]);
 								}
 								else
@@ -264,7 +280,7 @@ public class AdvancedMainActivity extends Activity
 		songVolume = intent.getIntExtra("volume", 4);
 		currentSongPositionInTime = intent.getIntExtra("progress", 0);
 		if (mainPlaylist == null) initializeList(rawPlaylist);
-		overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
+		//overridePendingTransition(R.anim.slide_upward, R.anim.slide_upward);
 		
 		
 		// untest
@@ -280,11 +296,11 @@ public class AdvancedMainActivity extends Activity
 		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) 
 		{
 			// tv.setText(String.valueOf(sb.getProgress()));
-			String line = "changing Volume:" + String.valueOf(sb.getProgress());
-			app.new SocketSend().execute( "Y" );
-			app.new SocketSend().execute( Integer.toString( sb.getProgress() ) );
-			
-			Toast.makeText(AdvancedMainActivity.this, line, Toast.LENGTH_SHORT).show();
+//			String line = "changing Volume:" + String.valueOf(sb.getProgress());
+//			app.new SocketSend().execute( "Y" );
+//			app.new SocketSend().execute( Integer.toString( sb.getProgress() ) );
+//			
+			//Toast.makeText(AdvancedMainActivity.this, line, Toast.LENGTH_SHORT).show();
 
 		}
  
@@ -302,7 +318,7 @@ public class AdvancedMainActivity extends Activity
 			app.new SocketSend().execute( "Y" );
 			app.new SocketSend().execute( Integer.toString( sb.getProgress() ) );
 			
-			Toast.makeText(AdvancedMainActivity.this, line, Toast.LENGTH_SHORT).show();
+			//Toast.makeText(AdvancedMainActivity.this, line, Toast.LENGTH_SHORT).show();
  
 		}
 	};
@@ -315,33 +331,68 @@ public class AdvancedMainActivity extends Activity
 	{
 		super.onResume();
 		
-		app.new SocketSend().execute( "W" );
+		app.new SocketSend().execute("k");
+		
+		//app.new SocketSend().execute( "W" );
 		
 		/* Testing */
-		TCPClearTask tcpClearTask = new TCPClearTask();
+		/*TCPClearTask tcpClearTask = new TCPClearTask();
 		Timer tcp_timer2 = new Timer();
-		tcp_timer2.schedule( tcpClearTask, 0 );
+		tcp_timer2.schedule( tcpClearTask, 0 );*/
+		Log.i("order","onResume");
 		
 		tcp_task = new TCPReadTimerTask();
 		Timer tcp_timer = new Timer();
-		tcp_timer.schedule(tcp_task, 3000, 200);
+		tcp_timer.schedule(tcp_task, 1000, 200);
+		
+		if (app.customPlaylistId != null)
+		{
+			//String[] Ids = loadList(app.playlistTitle);
+			initializeListViewFromDragDrop(app.customPlaylistId);
+		}
 
 		getIndex();
+		
+		
+		
 	}
 
 	@Override
 	public void onPause()
 	{
+		app.currSongId = latestSongId;
+		app.new SocketSend().execute("K");
+		stopTime();
 		tcp_task.cancel();
 		super.onPause();
+		
+		
 
+	}
+	
+	@Override
+	public void onBackPressed()
+	{
+		Intent resultIntent = new Intent();
+		resultIntent.putExtra("test", 1);
+		setResult(Activity.RESULT_OK, resultIntent);
+		finish();
+	}
+	
+	@Override
+	public void onStop()
+	{
+		super.onStop();
+		
+		
 	}
 
 	public void openDragDropPlaylist(View view)
 	{
 		Intent intent = new Intent(this, DragDropPlaylist.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);
-
+		
+		
 		startActivityForResult(intent, dragDrop);
 	}
 
@@ -349,15 +400,14 @@ public class AdvancedMainActivity extends Activity
 	public void onActivityResult(int requestCode, int resultCode, Intent data) 
 	{   
 		super.onActivityResult(requestCode, resultCode, data);
-		
+		Log.i("order","onactivityresult");
 		if (requestCode == dragDrop && resultCode == Activity.RESULT_OK)
 		{
-			Toast.makeText(this, "backFromDrag", Toast.LENGTH_SHORT).show();
+			//Toast.makeText(this, "backFromDrag", Toast.LENGTH_SHORT).show();
 			String name = data.getStringExtra("playlistName");
 			String[] result = loadList(name);
 			if (result != null)
 			{
-				Toast.makeText(this, "playlist test loaded", Toast.LENGTH_SHORT).show();
 				for (int i =0; i < result.length; i++)
 					Log.i("load",result[i]);
 				currentSongPositionInTime = 0;
@@ -366,8 +416,7 @@ public class AdvancedMainActivity extends Activity
 				initializeListViewFromDragDrop(result);
 			}
 		}
-		else if (resultCode == Activity.RESULT_CANCELED)
-			Toast.makeText(this, "action cancelled", Toast.LENGTH_SHORT).show();
+		
 	}
 
 	public void initializeList(String[] playlist)
@@ -416,7 +465,7 @@ public class AdvancedMainActivity extends Activity
 	}
 
 	/* Gets the current song index from DE2 */
-	public void getIndex() {
+	private void getIndex() {
 		app.new SocketSend().execute("I");
 	}
 
@@ -720,6 +769,23 @@ public class AdvancedMainActivity extends Activity
 		loadPlaylistIntoListView(newRawPlaylist);
 	}
 	
+	private int findSong(int id)
+	{
+		for (int i =0; i < mainPlaylist.size(); i++)
+		{
+			if ( id == Integer.parseInt(mainPlaylist.get(i)[0]))
+			{
+				return i;
+			}
+		}
+		return 0;
+	}
+	
+	private void stopTime()
+	{
+		app.new SocketSend().execute("o");
+	}
+	
 	public void loadPlaylistIntoListView(String[] playlist)
 	{
 		list = new ArrayList<HashMap<String, String>>();
@@ -771,7 +837,7 @@ public class AdvancedMainActivity extends Activity
 				//Drawable block = getWallpaper();
 				ListView listView = (ListView) findViewById(R.id.listView);
 				listView.setSelector(R.drawable.list_background);
-				View rowView = listView.getChildAt(position);
+				//View rowView = listView.getChildAt(position);
 				
 				//listView.set
 				//listView.setSelector(R.drawable.selectorv2);

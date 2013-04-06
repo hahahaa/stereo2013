@@ -12,6 +12,8 @@ import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.example.stereoplayer.MyApplication.SocketSend;
+
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
@@ -28,7 +30,7 @@ import android.view.WindowManager;
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class LoadingScreenActivity  extends Activity {
 	
-	private final String thisIP = "206.87.114.68";
+	private final String thisIP = "192.168.0.107";
 	//private String ipStr;
 	private int portNumber = 50002;
 	
@@ -73,6 +75,7 @@ public class LoadingScreenActivity  extends Activity {
 			}
 			
 			Log.i("flow", "SocketConnect: Sending command playlist" );
+			myApp.new SocketSend().execute("k");
 			myApp.new SocketSend().execute("playlist");
 		}
 	}
@@ -106,7 +109,9 @@ public class LoadingScreenActivity  extends Activity {
 		TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 		tcp_timer = new Timer();
 		tcp_timer.schedule(tcp_task, 3000, 200);
-		Log.i("flow", "LoadingScreenActivity: Scheduled ReadTimerTask" );	
+		Log.i("flow", "LoadingScreenActivity: Scheduled ReadTimerTask" );
+		MyApplication app = (MyApplication) getApplication();
+		
 	}
 	
 	public class TCPReadTimerTask extends TimerTask 
@@ -183,9 +188,14 @@ public class LoadingScreenActivity  extends Activity {
 										Log.i("buffer", buffer[k]);
 									//String volumeInString = buffer[0];
 									int volume = Integer.parseInt(buffer[0]);
-									String[] playlist = Arrays.copyOfRange(buffer, 1, buffer.length);
+									int id = Integer.parseInt(buffer[1]);
+									MyApplication myapp = (MyApplication) getApplication();
+									myapp.currSongId = id;
+									String[] playlist = Arrays.copyOfRange(buffer, 2, buffer.length);
+									
 									
 									Intent resultIntent = new Intent();
+									resultIntent.putExtra("index", id);
 									resultIntent.putExtra("volume", volume);
 									resultIntent.putExtra("FromLoading", playlist);
 									setResult(Activity.RESULT_OK, resultIntent);

@@ -1,5 +1,6 @@
 package com.example.stereoplayer;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -9,12 +10,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.example.stereoplayer.MyApplication.SocketSend;
+
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -25,6 +29,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.DragEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.View.DragShadowBuilder;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
@@ -49,10 +55,17 @@ public class DragDropPlaylist extends Activity {
 	
 	private EditText nameEdit;
 	private String currentName;
+	private MyApplication app;
+	private final static int loadPlaylist = 5;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		setContentView(R.layout.dragdropplaylist);
 		listSource = (ListView) findViewById(R.id.listView1);
 		listTarget = (ListView) findViewById(R.id.listView2);
@@ -85,7 +98,31 @@ public class DragDropPlaylist extends Activity {
 
 		listSource.setOnDragListener(new MyDragEventListener());
 		targetLayout.setOnDragListener(new MyDragEventListener());
+		app = (MyApplication) getApplication();
 
+	}
+	
+	@Override
+	public void onPause()
+	{
+		super.onPause();
+		app.new SocketSend().execute("K");
+	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		app.new SocketSend().execute("k");
+		if (app.playlistTitle != null)
+		{
+			while(!newSongList.isEmpty())
+				newSongList.remove(0);
+			while(!droppedList.isEmpty())
+				droppedList.remove(0);
+			String[] Ids = loadList(app.playlistTitle);
+			initializeListViewFromDragDrop(Ids);
+		}
 	}
 	
 	/**
@@ -101,6 +138,7 @@ public class DragDropPlaylist extends Activity {
 			MyApplication app = (MyApplication) DragDropPlaylist.this.getApplication();
 			app.new SocketSend().execute("Z");
 			sendCurrentPlayListToDE2(list);
+			app.customPlaylistId = list;
 			Intent resultIntent = new Intent();
 			resultIntent.putExtra("playlistName", currentName);
 			setResult(Activity.RESULT_OK, resultIntent);
@@ -135,31 +173,35 @@ public class DragDropPlaylist extends Activity {
 	}
 	
 	public void loadListFromFile (View view) {
-		String name = nameEdit.getEditableText().toString();
-		if(name.compareTo("") == 0)
-			return;
-		String[] list = loadList(name);
-		if(list == null)
-			return;
-		while(!newSongList.isEmpty())
-			newSongList.remove(0);
-		while(!droppedList.isEmpty())
-			droppedList.remove(0);
-		for(int i = 0; i < list.length; i++) {
-			boolean found = false;
-			for(int position = 0; position < allSonglist.size() && !found; position++) {
-				if(allSonglist.get(position).get("ID").compareTo(list[i]) == 0) {
-					HashMap<String, String> song = new HashMap<String, String>();
-					song.put("ID", allSonglist.get(position).get("ID"));
-					song.put("Song", allSonglist.get(position).get("Song"));
-					song.put("Artist", allSonglist.get(position).get("Artist"));
-					newSongList.add(song);
-					droppedList.add(allSonglist.get(position).get("Song") + "\n" + allSonglist.get(position).get("Artist"));	//here
-					found = true;
-				}
-			}
-		}
-		targetAdapter.notifyDataSetChanged();
+		//String name = nameEdit.getEditableText().toString();
+		////if(name.compareTo("") == 0)
+		//{
+			Intent intent = new Intent(this, LoadPlaylist.class);
+			startActivity(intent);
+			//return;
+		//}
+//		String[] list = loadList(name);
+//		if(list == null)
+//			return;
+//		while(!newSongList.isEmpty())
+//			newSongList.remove(0);
+//		while(!droppedList.isEmpty())
+//			droppedList.remove(0);
+//		for(int i = 0; i < list.length; i++) {
+//			boolean found = false;
+//			for(int position = 0; position < allSonglist.size() && !found; position++) {
+//				if(allSonglist.get(position).get("ID").compareTo(list[i]) == 0) {
+//					HashMap<String, String> song = new HashMap<String, String>();
+//					song.put("ID", allSonglist.get(position).get("ID"));
+//					song.put("Song", allSonglist.get(position).get("Song"));
+//					song.put("Artist", allSonglist.get(position).get("Artist"));
+//					newSongList.add(song);
+//					droppedList.add(allSonglist.get(position).get("Song") + "\n" + allSonglist.get(position).get("Artist"));	//here
+//					found = true;
+//				}
+//			}
+//		}
+//		targetAdapter.notifyDataSetChanged();
 	}
 	
 	private static class MyDragShadowBuilder extends View.DragShadowBuilder {
@@ -440,5 +482,31 @@ public class DragDropPlaylist extends Activity {
 			}
 		}	
 		return null;
+	}
+	
+	public void initializeListViewFromDragDrop(String[] result)
+	{
+		
+		
+		for(int i = 0; i < result.length; i++) {
+			boolean found = false;
+			for(int position = 0; position < allSonglist.size() && !found; position++) {
+				if(allSonglist.get(position).get("ID").compareTo(result[i]) == 0) {
+					HashMap<String, String> song = new HashMap<String, String>();
+					song.put("ID", allSonglist.get(position).get("ID"));
+					song.put("Song", allSonglist.get(position).get("Song"));
+					song.put("Artist", allSonglist.get(position).get("Artist"));
+					newSongList.add(song);
+					droppedList.add(allSonglist.get(position).get("Song") + "\n" + allSonglist.get(position).get("Artist"));	//here
+					found = true;
+				}
+			}
+		}
+		
+		nameEdit.setText(app.playlistTitle);
+		
+		targetAdapter.notifyDataSetChanged();
+		
+		
 	}
 } 

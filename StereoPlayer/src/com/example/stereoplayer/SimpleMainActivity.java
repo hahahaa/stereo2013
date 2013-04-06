@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.example.stereoplayer.MyApplication.SocketSend;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -61,7 +63,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 						String data = new String();
 						Log.i( "HandShake", "Command got is: " + msg );
 
-						if (msg.compareTo("M") == 0 || msg.compareTo("V")==0 || msg.compareTo("O") == 0)
+						if (msg.compareTo("M") == 0 || msg.compareTo("V")==0 || msg.compareTo("O") == 0 || msg.compareTo("I") == 0)
 						{
 							while ( in.available() == 0 );
 							bytes_avail = in.available();
@@ -96,6 +98,8 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 
 						final String command = new String(msg);
 						final String message = new String( data );
+						Log.i("ss",command);
+						Log.i("ss",message);
 
 						Log.i("HandShake", "Command is: " + command);
 						if (msg.compareTo("M") == 0)
@@ -132,7 +136,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 
 									ImageView image = (ImageView) findViewById(R.id.mainButton);
 
-
+										
 									image.setImageResource(R.drawable.play_button);
 									showStatus.setText("Paused");
 									showStatus.show();
@@ -166,13 +170,18 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 								else if (command.compareTo("O") == 0) 
 								{
 									currentSongPositionInTime = Integer.parseInt( message );
-									
+
 									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar2);
 									int songLength = Integer.parseInt( mainPlaylist.get(songIndex)[4] );
 									int currentProgress = (int) ( ((double) currentSongPositionInTime) / (double) songLength * 100.0 );
 									pb.setProgress( currentProgress );
+									TextView songName = (TextView) findViewById(R.id.songName);
+									TextView artistName = (TextView) findViewById(R.id.artistName);
+									
+									songName.setText(mainPlaylist.get(songIndex)[1]);
+									artistName.setText(mainPlaylist.get(songIndex)[2]);
 								}
-								else if (command.compareTo("M") == 0) 
+								else if (command.compareTo("M") == 0)
 								{
 									Log.i( "Modee", "Got M: " );
 
@@ -181,41 +190,44 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 									TextView artistName = (TextView) findViewById(R.id.artistName);
 									ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
 									bar.setProgress( 0 );
-									songIndex = Integer.parseInt( message );
+									int songId = Integer.parseInt( message );
+									songIndex = findSong(songId);
+									MyApplication myapp = (MyApplication)SimpleMainActivity.this.getApplication();
+									myapp.currSongId = songId;
+									latestSongId = songId;
 									Log.i( "Mode", "In M: songIndex is: " + songIndex );
 									songName.setText(mainPlaylist.get(songIndex)[1]);
 									artistName.setText(mainPlaylist.get(songIndex)[2]);
 
 									image.setImageResource(R.drawable.pause_button);
-									showStatus.setText("Playing");
-									showStatus.show();
+									//showStatus.setText("Playing");
+									//showStatus.show();
 									playing = true;
 									currentSongPositionInTime = 0;
 
-									//}
-									//else {
-									//	image.setImageResource(R.drawable.play_button);
-									//	showStatus.setText("Paused");
-									//	showStatus.show();
-									//	playing = false;
-									//}
-									/*
-									Log.i( "HandShake", "Successfully reached here" );
-
-									ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar1);
-									pb.setProgress( 0 );
-
-									songIndex = Integer.parseInt( message );
-									Log.i("indexNumber", Integer.toString(songIndex));
-									text.setText("Playing: " + mSongs[songIndex]);
-
-									setupTime( Integer.parseInt( mLengths[songIndex] ) );
-									currentSongPositionInTime = 0;
-									 */
+		
 								} 
 								else if (command.compareTo("V")==0)
 								{
 									songVolume = Integer.parseInt(message);
+								}
+								else if (command.compareTo("I")==0)
+								{
+									int id = Integer.parseInt(message);
+									MyApplication myapp = (MyApplication)SimpleMainActivity.this.getApplication();
+								
+									myapp.currSongId = id;
+									latestSongId = id;
+									songIndex = findSong(id);
+									
+									TextView songName = (TextView) findViewById(R.id.songName);
+									TextView artistName = (TextView) findViewById(R.id.artistName);
+									
+									songName.setText(mainPlaylist.get(songIndex)[1]);
+									artistName.setText(mainPlaylist.get(songIndex)[2]);
+									
+									
+									
 								}
 								else
 								{
@@ -296,6 +308,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 	private double currentSongPositionInTime;
 	private Timer tcp_timer;
 	private boolean paused;
+	private int latestSongId;
 
 	@SuppressLint("ShowToast")
 	@Override
@@ -309,7 +322,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		showStatus = Toast.makeText(this, "", Toast.LENGTH_SHORT);
 		gestureDetector = new GestureDetector(this, this);
 
-		
+
 		songVolume = 4;
 		PositioningThread scale = new PositioningThread();
 		scale.run();
@@ -317,11 +330,11 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		MyApplication myApp = (MyApplication)SimpleMainActivity.this.getApplication();
 		app = myApp;
 
-		
-		
+
+
 
 	}
-	
+
 	@Override
 	public void onResume()
 	{
@@ -335,23 +348,41 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		}
 		else
 		{
-			showStatus.setText("I. AM. BACK.");
-			showStatus.show();
+			//showStatus.setText("I. AM. BACK.");
+			//showStatus.show();
 			TextView songName = (TextView) findViewById(R.id.songName);
 			TextView artistName = (TextView) findViewById(R.id.artistName);
-			ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
+			int temp = findSong(app.currSongId);
+			songName.setText(mainPlaylist.get(temp)[1]);
+			artistName.setText(mainPlaylist.get(temp)[2]);
+			songIndex = findSong(app.currSongId);
+			
+			//ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
 			TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 			tcp_timer = new Timer();
 			tcp_timer.schedule(tcp_task, 0, 200);
+
 		}
 		paused = false;
+		if (app.sock != null)
+		{
+			app.new SocketSend().execute("T");
+			app.new SocketSend().execute("k");
+			app.new SocketSend().execute("I");
+
+		}
+		
+		
 	}
-	
+
 	@Override
 	public void onPause()
 	{
 		super.onPause();
+		app.currSongId = latestSongId;
 		paused = true;
+		if (app.sock !=null)
+		app.new SocketSend().execute("K");
 	}
 
 	@Override
@@ -434,7 +465,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 
 		if (playing == false){
 			image.setImageResource(R.drawable.pause_button);
-			showStatus.setText("Playing");
+			//showStatus.setText("Playing");
 			showStatus.show();
 			playing = true;
 		}
@@ -467,7 +498,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			float newWidth = (float) (width/1.6);
 			float newHeight = (float) (height/8);
 
-			/*
+			
 			float currentWidth = 256;
 			float scale = newWidth/currentWidth;
 			image.setScaleY( scale );
@@ -484,7 +515,7 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			volume.setScaleX(scale);
 			volume.setScaleY(scale);
 			//volume.setX(-100);
-			 */
+			 
 
 			volume.setImageResource(R.drawable.volumev3);
 			volume.setAlpha((float)0);
@@ -537,32 +568,33 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 
 		if (initialX < finalX && (finalX - initialX) >= minHorizontalDistance )
 		{
-			showStatus.setText("Right fling detected, Next!");
-			showStatus.show();
-			nextSong();
-			return true;
-		}
-
-		if (initialX > finalX && (initialX - finalX) >= minHorizontalDistance )
-		{
-			showStatus.setText("Left fling detected, Prev!");
+			showStatus.setText("Previous");
 			showStatus.show();
 			prevSong();
 			return true;
 		}
 
+		if (initialX > finalX && (initialX - finalX) >= minHorizontalDistance )
+		{
+			showStatus.setText("Next");
+			showStatus.show();
+			nextSong();
+			return true;
+		}
+
 		if (initialY < finalY && (finalY - initialY) >= minVerticalDistance )
 		{
-			showStatus.setText("Downward fling detected, Advanced!");
-			showStatus.show();
-			openAdvancedPlaylist();
+			//showStatus.setText("");
+			//showStatus.show();
+			//openAdvancedPlaylist();
 			return true;
 		}
 
 		if (initialY > finalY && (initialY - finalY) >= minVerticalDistance )
 		{
-			showStatus.setText("Upward fling detected, Simple!");
+			showStatus.setText("Opening Advanced View");
 			showStatus.show();
+			openAdvancedPlaylist();
 			return true;
 		}
 
@@ -611,17 +643,23 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 				/*TCPReadTimerTask tcp_task = new TCPReadTimerTask();
 				tcp_timer = new Timer();
 				tcp_timer.schedule(tcp_task, 0, 200);*/
+				int volume = data.getIntExtra("volume", 4);
+				songVolume = volume;
+				updateVolume();
+				int id = app.currSongId;
+				//int id = data.getIntExtra("index", 0);
+				int currSong = findSong(id);
+				songIndex = currSong;
 				ProgressBar bar = (ProgressBar) findViewById(R.id.progressBar2);
 				bar.setProgress(0);
 				TextView songName = (TextView) findViewById(R.id.songName);
 				TextView artistName = (TextView) findViewById(R.id.artistName);
-				songName.setText(mainPlaylist.get(0)[1]);
-				artistName.setText(mainPlaylist.get(0)[2]);
+				songName.setText(mainPlaylist.get(currSong)[1]);
+				artistName.setText(mainPlaylist.get(currSong)[2]);
 			} 
 			break; 
 		}
-		
-		
+
 		} 
 	}
 
@@ -640,6 +678,8 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 			newSong[4]	= playlist[i + 4];
 			mainPlaylist.add(newSong);
 		}
+		
+		app.mainList = mainPlaylist;
 
 		Log.i("Modee", "SimpleMain - Finished initializing Song List");
 	}
@@ -695,12 +735,25 @@ public class SimpleMainActivity extends Activity implements OnGestureListener {
 		Intent intent = new Intent(this, AdvancedMainActivity.class);
 		intent.putExtra("rawPlaylist", rawPlaylist);
 		intent.putExtra("volume", songVolume);
-		intent.putExtra("progress", currentSongPositionInTime);
-		
+		intent.putExtra("currSong", songIndex);
+		//intent.putExtra("progress", currentSongPositionInTime);
+
 		tcp_timer.cancel();
 		//gestureDetector.c
 		//sgestureDetector.
-		startActivity(intent);
+		startActivityForResult(intent,advanced);
+	}
+
+	private int findSong(int id)
+	{
+		for (int i =0; i < mainPlaylist.size(); i++)
+		{
+			if ( id == Integer.parseInt(mainPlaylist.get(i)[0]))
+			{
+				return i;
+			}
+		}
+		return 0;
 	}
 
 }

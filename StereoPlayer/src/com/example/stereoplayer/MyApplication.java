@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.TimerTask;
 
 
@@ -20,6 +22,11 @@ public class MyApplication extends Application {
 	final static int MAX_BYTES = 255;
 	
 	Socket sock = null;
+	String[] customPlaylistId = null;
+	String playlistTitle = null;
+	ArrayList<String[]> mainList;
+	int currSongId;
+	
 	
 	public class SocketSend extends AsyncTask<String, String, Socket> {
 		// The main parcel of work for this thread. Opens a socket

@@ -27,7 +27,8 @@
             android:padding="5dp"
             android:text="@string/play"
             android:textColor="@color/tab_font_colors"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textSize="15sp"  />
 
         <Button
             android:id="@+id/button7"
@@ -40,7 +41,8 @@
             android:padding="5dp"
             android:text="@string/prev"
             android:textColor="@color/tab_font_colors"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textSize="15sp"  />
 
         <Button
             android:id="@+id/button6"
@@ -53,7 +55,8 @@
             android:padding="5dp"
             android:text="@string/next"
             android:textColor="@color/tab_font_colors"
-            android:textStyle="bold" />
+            android:textStyle="bold" 
+            android:textSize="15sp" />
 
         <ToggleButton
             android:id="@+id/toggleButton1"
@@ -68,7 +71,8 @@
             android:textColor="@color/tab_font_colors"
             android:textOff="@string/PlayModeOrder"
             android:textOn="@string/PlayModeShuffle"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textSize="15sp"  />
 
         <ToggleButton
             android:id="@+id/toggleButton2"
@@ -83,7 +87,8 @@
             android:textColor="@color/tab_font_colors"
             android:textOff="@string/PlayModeRepeatOff"
             android:textOn="@string/PlayModeRepeatOn"
-            android:textStyle="bold" />
+            android:textStyle="bold" 
+            android:textSize="15sp" />
     </LinearLayout>
 
     <LinearLayout

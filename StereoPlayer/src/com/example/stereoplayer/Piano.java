@@ -41,6 +41,20 @@ public class Piano extends Activity {
 		//addListenerOnButton();
 		app = (MyApplication) getApplication();
 	}
+	
+	@Override
+	public void onPause()
+	{
+		super.onPause();
+		app.new SocketSend().execute("K");
+	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		app.new SocketSend().execute("k");
+	}
 
 	public void playDoD(View view)
 	{

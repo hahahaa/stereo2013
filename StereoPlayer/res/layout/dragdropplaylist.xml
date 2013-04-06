@@ -62,7 +62,7 @@
 
         <EditText
             android:id="@+id/editText1"
-            android:hint="playlist name"
+            android:hint="Enter playlist name"
             android:layout_width="0dip"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -87,7 +87,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:onClick="sendList"
-            android:text="Send" />
+            android:text="Play" />
 
     </LinearLayout>
 
