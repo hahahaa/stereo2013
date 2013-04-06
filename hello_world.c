@@ -38,12 +38,9 @@ const int KEYS = 0x00002440;
 #define RATING_LENGTH 3
 #define TIME_LENGTH 4
 
-//#define SONG_SIZE 65472
 #define SONG_SIZE 32266
-//#define SONG_SIZE 16384
 #define WAV_HEADER_SIZE 44
 #define SAMPLE_SIZE 96
-//#define MIX_SONG_SIZE 690000
 #define PIANO_SONG_SIZE 28000
 
 volatile int volume;
@@ -150,7 +147,6 @@ int updateState( int prevState );
 
 /* Mixing */
 void readSong( volatile unsigned int* song, int size, char* fileName );
-void playPianoBySW();
 
 int main()
 {
@@ -232,8 +228,8 @@ int main()
 		printf("%s\t", songDetailList[cc]->id );
 	printf("\n");
 
-	srand(cc);	//TODO: random number generator
-	//shufflePlayList( playList, numSongs );
+	srand(cc);
+	
 	while(1)
 	{
 		if( state == STOP || state == NEXT_PLAY || state == PREV_PLAY )
@@ -370,7 +366,6 @@ int updateStateFromUART( int prevState )
 		// send the song ID
 		char* songID = (char*)malloc( 3 );
 		sprintf( songID, "%d", playList[currSong] );
-		printf("debuggg : %s\n", songID);
 		sendHandShakedLongMessageToMiddleMan( 'I', songID );
 		free( songID );
 		sendOneSec = 1;
@@ -394,11 +389,6 @@ int updateStateFromUART( int prevState )
 	else if( strcmp(temp, "Z") == 0)
 	{
 		receivePlayListFromMiddleMan( playList , &playListSize );
-		int i;
-		printf("New list\n");
-		for(i = 0; i < playListSize; i++)
-			printf("%d ", playList[i]);
-		printf("\n");					// debug
 		currSong = 0;
 		state = STOP;
 
@@ -546,15 +536,10 @@ int updateStateFromKeysWhilePlaying( int prevState )
 	else if(key == 0x2)	//next
 	{
 		state = NEXT_PLAY;
-		//volume++;
-		//printf("volume: %d\n", volume);
 	}
 	else if(key == 0x1)
 	{
 		state = PREV_PLAY;
-		//volume--;
-		//printf("volume: %d\n", volume);
-		//sendSongListToMiddleMan( songDetailList, numSongs );	//debug
 	}
 	return state;
 }
@@ -882,7 +867,6 @@ int nextSong( int next, int size )
 	}
 	else
 	{
-		printf("repeat\n");	//debug
 		return currSong;
 	}
 
@@ -1037,20 +1021,17 @@ void sendHandShakedLongMessageToMiddleMan( char command, char* str )
 	char buffer[5]; // Gonna change the magic number
 
 	alt_up_rs232_write_data( uart, command );
-	//printf( "Sent command: %c\n", command );	// debug
 
 	sprintf( buffer, "%d", (int)strlen( str ) );
 	alt_up_rs232_write_data( uart, (int) strlen(buffer) );  // Number of digits of the number of chars of data
-	//printf( "Sent %d\n", (int) strlen( buffer ) );
 
 	char* buffer2 = malloc( (int) strlen( buffer ) + 1 );
 	sprintf( buffer2, "%d", (int) strlen( str ) );
 	sendStringToMiddleMan( buffer2 );  // Number of chars of data
-	//printf( "Sent %s\n", buffer2 );
 
 	for ( i = 0; i < strlen(str); i++ )
 		alt_up_rs232_write_data( uart, str[i] );
-	//printf("sendHandShakedLongMessageToMiddleMan done\n");	// debug
+	
 	free( buffer2 );
 }
 
@@ -1062,13 +1043,8 @@ void sendStringToMiddleMan( char* str )
 	if(lock_uart == 1)
 		return;
 	int i;
-
-	//alt_up_rs232_write_data( uart, (unsigned char) strlen(str) );
-
 	for ( i = 0; i < strlen(str); i++ )
 		alt_up_rs232_write_data( uart, str[i] );
-
-	//printf("sendStringToMiddle: %s\n", str);	//debug
 }
 
 /* Reads a string from the middle man; the first byte needs to be the length of the string
@@ -1404,33 +1380,6 @@ void readSong( volatile unsigned int* song, int size, char* fileName)
 		song[cc] = song[cc]<<1;
 	}
 	closeFileInSD( file_handle );
-}
-
-/**
- * play piano from switches
- */
-void playPianoBySW()
-{
-	unsigned char sw = IORD_8DIRECT(SWITCHES, 0);
-	if(sw == 1)
-		mixSong = A3;
-	else if(sw == 2)
-		mixSong = B3;
-	else if(sw == 4)
-		mixSong = C3;
-	else if(sw == 8)
-		mixSong = C4;
-	else if(sw == 16)
-		mixSong = D3;
-	else if(sw == 32)
-		mixSong = E3;
-	else if(sw == 64)
-		mixSong = F3;
-	else if(sw == 0x80)
-		mixSong = G3;
-
-	if(sw == 1)
-		mix_flag = 1;
 }
 
 /**
